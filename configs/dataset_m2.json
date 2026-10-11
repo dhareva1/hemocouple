@@ -1,0 +1,23 @@
+{
+  "_comment": "Full M2 reference dataset (docs/m2_design.md). Bounds from geometry.DEFAULT_BOUNDS with the laminar cap Re_t <= 1700 (proposal section 6).",
+  "n_stenosis": 48,
+  "n_control": 8,
+  "seed": 2026,
+  "max_throat_re": 1700.0,
+  "n_r": 12,
+  "n_theta": 8,
+  "val_frac": 0.15,
+  "test_frac": 0.15,
+  "ood_severity": 0.68,
+  "container": "hemocouple-m2data",
+  "bounds": {
+    "radius": [2.5e-3, 4.0e-3],
+    "severity": [0.2, 0.75],
+    "length_ratio": [2.0, 6.0],
+    "mean_flow": [4.0e-6, 8.0e-6],
+    "amplitude": [6.0e-6, 14.0e-6],
+    "period": [0.7, 1.0],
+    "systole_peak": [0.12, 0.20]
+  },
+  "reference": {"refine": 1.5, "radial_grading": 4.0, "n_cycles": 5, "n_procs": 8}
+}

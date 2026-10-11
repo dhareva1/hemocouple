@@ -1,0 +1,49 @@
+{
+  "levels": {
+    "coarse": {
+      "cells": 48000,
+      "q": 6.0000000000000035e-06,
+      "q_mesh": 6.000000000877e-06,
+      "p_in": 89.2767463935474,
+      "p_out": 0.0,
+      "dp": 89.2767463935474,
+      "iterations": 1842,
+      "converged": true,
+      "wall_time_s": 93.961478208,
+      "n_procs": 1
+    },
+    "medium": {
+      "cells": 162000,
+      "q": 6.0000000000000035e-06,
+      "q_mesh": 6.000000000868e-06,
+      "p_in": 87.5172070079832,
+      "p_out": 0.0,
+      "dp": 87.5172070079832,
+      "iterations": 1698,
+      "converged": true,
+      "wall_time_s": 310.8987025,
+      "n_procs": 1
+    },
+    "fine": {
+      "cells": 547560,
+      "q": 6.0000000000000035e-06,
+      "q_mesh": 6.000000000844e-06,
+      "p_in": 86.4036185503294,
+      "p_out": 0.0,
+      "dp": 86.4036185503294,
+      "iterations": 2451,
+      "converged": true,
+      "wall_time_s": 265.707801333,
+      "n_procs": 8
+    }
+  },
+  "gci_dp": {
+    "order": 1.128246074080341,
+    "gci_fine": 0.027773332740127724,
+    "extrapolated": 84.48384539196991,
+    "monotone": true,
+    "kind": "monotone"
+  },
+  "reynolds_throat_mean_flow": 545.3344543580185,
+  "stage_wall_time_s": 677.4546350830001
+}

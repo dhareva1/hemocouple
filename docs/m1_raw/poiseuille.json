@@ -1,0 +1,58 @@
+{
+  "dp_hagen_poiseuille": 59.41784542097427,
+  "levels": {
+    "coarse": {
+      "cells": 48000,
+      "q": 6.0000000000000035e-06,
+      "q_mesh": 6.000000000877e-06,
+      "p_in": 60.407999480628604,
+      "p_out": 0.0,
+      "dp": 60.407999480628604,
+      "iterations": 212,
+      "converged": true,
+      "wall_time_s": 15.922241875000001,
+      "n_procs": 1,
+      "rel_err": 0.016664253855708022,
+      "mass_rel_err": 1.461666343516299e-10,
+      "polygon_area_ratio": 0.9935868511442058
+    },
+    "medium": {
+      "cells": 162000,
+      "q": 6.0000000000000035e-06,
+      "q_mesh": 6.000000000868e-06,
+      "p_in": 59.868666553208,
+      "p_out": 0.0,
+      "dp": 59.868666553208,
+      "iterations": 328,
+      "converged": true,
+      "wall_time_s": 84.435562292,
+      "n_procs": 1,
+      "rel_err": 0.0075873019130814345,
+      "mass_rel_err": 1.446665010007564e-10,
+      "polygon_area_ratio": 0.9971466573496368
+    },
+    "fine": {
+      "cells": 547560,
+      "q": 6.0000000000000035e-06,
+      "q_mesh": 6.000000000844e-06,
+      "p_in": 59.267057615194,
+      "p_out": 0.0,
+      "dp": 59.267057615194,
+      "iterations": 357,
+      "converged": true,
+      "wall_time_s": 70.07420141699998,
+      "n_procs": 8,
+      "rel_err": -0.002537752836911822,
+      "mass_rel_err": 1.4066658948763688e-10,
+      "polygon_area_ratio": 0.9987312439537493
+    }
+  },
+  "gci_dp": {
+    "order": -0.2695042583950795,
+    "gci_fine": -0.12257571133132417,
+    "extrapolated": 65.07881901175158,
+    "monotone": true
+  },
+  "extrapolated_rel_err": 0.09527396274081346,
+  "stage_wall_time_s": 177.383480375
+}

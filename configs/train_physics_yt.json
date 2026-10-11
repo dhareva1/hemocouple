@@ -1,0 +1,14 @@
+{
+  "window": 20,
+  "warmup_cycles": 3,
+  "basis": "pod",
+  "max_modes": 16,
+  "project": true,
+  "lam_data": 1.0,
+  "lam_mass": 0.0,
+  "lam_pressure": 0.1,
+  "epochs": 300,
+  "patience": 30,
+  "seed": 0,
+  "dp_prior": "young_tsai"
+}

@@ -1,0 +1,22 @@
+{
+  "_comment": "Fast end-to-end check: small dataset, coarse-ish mesh, inside the laminar-verified range. Not for reported results.",
+  "n_stenosis": 10,
+  "n_control": 2,
+  "seed": 7,
+  "n_r": 12,
+  "n_theta": 8,
+  "val_frac": 0.17,
+  "test_frac": 0.17,
+  "ood_severity": null,
+  "container": "hemocouple-fast",
+  "bounds": {
+    "radius": [2.8e-3, 3.5e-3],
+    "severity": [0.3, 0.7],
+    "length_ratio": [3.0, 6.0],
+    "mean_flow": [4.5e-6, 6.5e-6],
+    "amplitude": [7.0e-6, 10.0e-6],
+    "period": [0.75, 0.95],
+    "systole_peak": [0.13, 0.18]
+  },
+  "reference": {"refine": 0.75, "n_cycles": 4, "n_procs": 4}
+}

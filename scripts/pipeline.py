@@ -1,0 +1,174 @@
+"""End-to-end pipeline: check → dataset → train → offline → coupled → report. Every stage is resumable.
+
+    python scripts/pipeline.py --work ~/hemocouple-work --stages all
+    python scripts/pipeline.py --work ~/hemocouple-work --stages train offline report   # after copying a finished dataset
+
+Layout under --work:
+    m2/            reference dataset (*.npz, cases.json, splits.json, dataset.json)
+    runs/          checkpoints (<variant>.pt) and training reports (<variant>.json)
+    eval/          offline evaluation JSON per split
+    m3/            coupled evaluation (results/<case>.json)
+    report.md      generated summary
+
+Parallelism defaults come from the machine (Apple silicon performance cores):
+    dataset   workers = P // procs concurrent cases, each with ``procs`` MPI ranks and its own container
+    coupled   one serial OpenFOAM run per worker, so up to P concurrent cases
+Docker Desktop must be allowed to use all CPUs (Settings → Resources).
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+import os
+import subprocess
+import sys
+import time
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+PY = sys.executable
+STAGES = ["check", "dataset", "train", "offline", "coupled", "report"]
+VARIANTS = ["physics_yt", "physics", "data_only", "soft_mass"]
+
+
+def log(msg: str) -> None:
+    print(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] {msg}", flush=True)
+
+
+def perf_cores() -> int:
+    for key in ("hw.perflevel0.physicalcpu", "hw.physicalcpu"):
+        try:
+            return int(subprocess.run(["sysctl", "-n", key], capture_output=True, text=True, check=True).stdout)
+        except Exception:
+            continue
+    return os.cpu_count() or 4
+
+
+def run(cmd, log_path: Path) -> subprocess.Popen:
+    log_path.parent.mkdir(parents=True, exist_ok=True)
+    return subprocess.Popen([str(c) for c in cmd], stdout=open(log_path, "a"), stderr=subprocess.STDOUT, cwd=ROOT)
+
+
+def wait_all(procs, what: str) -> None:
+    codes = [p.wait() for p in procs]
+    if any(codes):
+        raise SystemExit(f"{what}: {sum(c != 0 for c in codes)} worker(s) failed, see logs")
+
+
+def stage_check(args) -> None:
+    import importlib
+
+    for mod in ("numpy", "scipy", "torch"):
+        importlib.import_module(mod)
+    if subprocess.run(["docker", "info"], capture_output=True).returncode != 0:
+        raise SystemExit("Docker is not running: start Docker Desktop (and allow all CPUs in Settings → Resources)")
+    image = "opencfd/openfoam-run:2412"
+    if not subprocess.run(["docker", "images", "-q", image], capture_output=True, text=True).stdout.strip():
+        log(f"pulling {image} (~720 MB)")
+        subprocess.run(["docker", "pull", image], check=True)
+    ncpu = subprocess.run(["docker", "info", "--format", "{{.NCPU}}"], capture_output=True, text=True).stdout.strip()
+    log(f"Docker OK ({ncpu} CPUs visible), image present, Python deps OK; performance cores: {perf_cores()}")
+    if subprocess.run([PY, "-m", "pytest", "-q"], cwd=ROOT).returncode != 0:
+        raise SystemExit("unit tests failed")
+
+
+def stage_dataset(args, data: Path) -> None:
+    workers = args.dataset_workers or max(1, perf_cores() // args.procs)
+    log(f"dataset: {workers} concurrent case(s) x {args.procs} MPI ranks → {data}")
+    procs = [run([PY, "scripts/m2_make_dataset.py", "--config", args.dataset_config, "--out", data,
+                  "--shard", f"{k}/{workers}", "--procs", args.procs], data / f"worker_{k}.log") for k in range(workers)]
+    wait_all(procs, "dataset")
+    # Single pass to write splits.json / dataset.json once every case exists.
+    subprocess.run([PY, "scripts/m2_make_dataset.py", "--config", args.dataset_config, "--out", data], cwd=ROOT, check=True)
+    if not (data / "splits.json").exists():
+        raise SystemExit("dataset incomplete: splits.json not written")
+
+
+def stage_train(args, data: Path, runs: Path) -> None:
+    for v in args.variants:
+        if (runs / f"{v}.pt").exists():
+            continue
+        log(f"train: {v}")
+        subprocess.run([PY, "scripts/train_operator.py", "--data", data, "--config", f"configs/train_{v}.json",
+                        "--out", runs / f"{v}.pt", "--quiet"], cwd=ROOT, check=True)
+
+
+def model_args(args, runs: Path):
+    out = []
+    for v in args.variants:
+        out += ["--model", f"{v}={runs / f'{v}.pt'}"]
+    return out
+
+
+def stage_offline(args, data: Path, runs: Path, ev: Path) -> None:
+    splits = json.loads((data / "splits.json").read_text())
+    for split in ("val", "test", "test_ood"):
+        if not splits.get(split):
+            continue
+        log(f"offline: {split}")
+        with open(ev / f"offline_{split}.txt", "w") as fh:
+            subprocess.run([PY, "scripts/evaluate_offline.py", "--data", data, "--split", split, *model_args(args, runs),
+                            "--out", ev / f"offline_{split}.json"], cwd=ROOT, check=True, stdout=fh)
+
+
+def stage_coupled(args, data: Path, runs: Path, m3: Path) -> None:
+    splits = json.loads((data / "splits.json").read_text())
+    names = [s for s in args.coupled_splits.split(",") if splits.get(s)]
+    n_cases = sum(len(splits[s]) for s in names)
+    workers = min(args.coupled_workers or perf_cores(), n_cases)
+    variants = [v for v in args.variants if v in args.coupled_variants.split(",")]
+    margs = []
+    for v in variants:
+        margs += ["--model", f"{v}={runs / f'{v}.pt'}"]
+    log(f"coupled: {n_cases} cases in {','.join(names)}, {workers} workers, models {variants}")
+    procs = [run([PY, "scripts/m3_coupled_eval.py", "--data", data, "--split", ",".join(names), *margs, "--work", m3,
+                  "--cycles", args.coupled_cycles, "--tol", args.coupled_tol, "--shard", f"{k}/{workers}"],
+                 m3 / f"worker_{k}.log") for k in range(workers)]
+    wait_all(procs, "coupled")
+
+
+def stage_report(args, work: Path) -> None:
+    subprocess.run([PY, "scripts/make_report.py", "--work", work], cwd=ROOT, check=True)
+
+
+def main() -> None:
+    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument("--work", type=Path, required=True, help="keep outside OneDrive")
+    ap.add_argument("--stages", nargs="+", default=["all"], choices=STAGES + ["all"])
+    ap.add_argument("--dataset-config", default="configs/dataset_m2.json")
+    ap.add_argument("--procs", type=int, default=8, help="MPI ranks per dataset case")
+    ap.add_argument("--dataset-workers", type=int, default=0, help="0 = performance cores // procs")
+    ap.add_argument("--variants", nargs="+", default=VARIANTS)
+    ap.add_argument("--coupled-variants", default="physics_yt,physics", help="models run in the coupled evaluation")
+    ap.add_argument("--coupled-splits", default="test,test_ood")
+    ap.add_argument("--coupled-workers", type=int, default=0, help="0 = performance cores")
+    ap.add_argument("--coupled-cycles", type=int, default=3)
+    ap.add_argument("--coupled-tol", type=float, default=1e-4)
+    args = ap.parse_args()
+
+    work = args.work.expanduser().resolve()
+    data, runs, ev, m3 = work / "m2", work / "runs", work / "eval", work / "m3"
+    for d in (data, runs, ev, m3):
+        d.mkdir(parents=True, exist_ok=True)
+    stages = STAGES if "all" in args.stages else [s for s in STAGES if s in args.stages]
+    for st in stages:
+        tic = time.time()
+        log(f"=== {st} ===")
+        if st == "check":
+            stage_check(args)
+        elif st == "dataset":
+            stage_dataset(args, data)
+        elif st == "train":
+            stage_train(args, data, runs)
+        elif st == "offline":
+            stage_offline(args, data, runs, ev)
+        elif st == "coupled":
+            stage_coupled(args, data, runs, m3)
+        else:
+            stage_report(args, work)
+        log(f"=== {st} done in {(time.time() - tic) / 60:.1f} min ===")
+
+
+if __name__ == "__main__":
+    main()

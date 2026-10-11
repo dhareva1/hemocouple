@@ -1,0 +1,14 @@
+{
+  "n_stenosis": 40,
+  "n_control": 8,
+  "seed": 0,
+  "steps_per_cycle": 100,
+  "n_cycles": 6,
+  "n_r": 12,
+  "n_theta": 8,
+  "n_harmonics": 8,
+  "val_frac": 0.15,
+  "test_frac": 0.15,
+  "ood_severity": 0.68,
+  "tol": 1e-10
+}

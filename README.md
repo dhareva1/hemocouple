@@ -75,8 +75,8 @@ python3 scripts/pipeline.py --work ~/hemocouple-work --stages check train offlin
 | `coupled` | Two-way 1D–3D runs on test and test_ood (`m3_coupled_eval.py`): reference, Mode A baseline and operator, Mode B | up to P concurrent cases (each OpenFOAM run is serial) |
 | `report` | `report.md` in the work dir (`make_report.py`) | – |
 
-- Outputs: `~/hemocouple-work/{m2,runs,eval,m3}/`, logs `m2/worker_*.log` and `m3/worker_*.log`, summary `~/hemocouple-work/report.md`.
-- Useful flags: `--procs` (MPI ranks per dataset case), `--dataset-workers`, `--coupled-workers`, `--coupled-cycles` (default 3), `--coupled-tol` (default 1e-4), `--coupled-variants physics_yt,physics`.
+- Outputs: `~/hemocouple-work/{m2,runs,eval,m3}/`, logs `m2/worker_*.log`, `m3/queue.log` and `m3/logs/<case>__<method>.log`, summary `~/hemocouple-work/report.md`.
+- Useful flags: `--procs` (MPI ranks per dataset case), `--dataset-workers`, `--coupled-workers`, `--coupled-cycles` (default 3), `--coupled-tol` (default 1e-4), `--coupled-variants physics_yt_stokes` (default). Coupled runs are saved per (case, method) in `m3/raw/`, so adding a model later only runs that model.
 - Timing reference (M4 Pro, 8 ranks): dataset cases take 7–35 min each (median ≈ 11). A coupled run on the medium mesh is several hours per method per case, which is why the coupled stage runs many cases at once.
 
 ## Design notes

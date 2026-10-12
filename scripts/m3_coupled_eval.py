@@ -11,15 +11,23 @@ For every case:
     1d_only_B   1D vessel (L + L_ext) + reduced segment, ΔP = 0 (no 3D)
     <model>_B   same, with the operator's ΔP
 Metrics are over the last cycle, compared with the reference at Γ. Results go to <work>/results/<case>.json.
+
+Every run's time series is saved to <work>/raw/<case>/<method>.npz and skipped if present, so a new model
+only needs its own runs. --methods picks runs (reference, baseline_A, <model>_A, cfd = all 3D runs, B = all
+Mode B runs, all). --jobs N runs one process per (case, 3D method) on N workers, references first, then the
+Mode B runs and the metrics.
 """
 
 from __future__ import annotations
 
 import argparse
 import json
+import subprocess
 import sys
 import time
 import warnings
+from concurrent.futures import ThreadPoolExecutor
+from dataclasses import asdict
 from pathlib import Path
 
 import numpy as np
@@ -28,7 +36,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 warnings.filterwarnings("ignore", message=".*encountered in matmul", category=RuntimeWarning)
 
 from hemocouple import foam  # noqa: E402
-from hemocouple.coupling import run_coupled  # noqa: E402
+from hemocouple.coupling import CouplingResult, run_coupled  # noqa: E402
 from hemocouple.cross_section import CrossSectionGrid  # noqa: E402
 from hemocouple.geometry import CaseSpec  # noqa: E402
 from hemocouple.metrics import characteristic_impedance, mass_error, reflection_coefficient, relative_rmse  # noqa: E402
@@ -50,42 +58,77 @@ def truncated_spec(full: foam.FoamCaseSpec, cfg: ReferenceConfig) -> foam.FoamCa
                              full.axial_cell, full.density, full.viscosity, full.radial_grading)
 
 
-def main() -> None:
-    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--data", type=Path, required=True)
-    ap.add_argument("--split", default="test", help="split name(s), comma-separated, e.g. test,test_ood")
-    ap.add_argument("--cases", nargs="*")
-    ap.add_argument("--model", action="append", default=[], help="name=checkpoint.pt")
-    ap.add_argument("--work", type=Path, required=True)
-    ap.add_argument("--refine", type=float, default=None, help="mesh factor (default: as in the dataset)")
-    ap.add_argument("--cycles", type=int, default=4)
-    ap.add_argument("--substeps", type=int, default=20)
-    ap.add_argument("--vessel-length", type=float, default=0.15, help="1D vessel length upstream of the 3D inlet, m")
-    ap.add_argument("--tol", type=float, default=1e-5)
-    ap.add_argument("--skip-cfd", action="store_true", help="only the Mode B runs (no OpenFOAM)")
-    ap.add_argument("--wave-speed", type=float, default=6.0)
-    ap.add_argument("--shard", default="0/1", help="k/N: evaluate only cases with index %% N == k")
-    args = ap.parse_args()
-    shard_k, shard_n = (int(x) for x in args.shard.split("/"))
+def save_run(path: Path, res: CouplingResult, samples: list | None = None) -> None:
+    arrays = {k: v for k, v in asdict(res).items() if isinstance(v, np.ndarray)}
+    arrays["scalars"] = np.array(json.dumps({"provider_time": res.provider_time, "wall_time": res.wall_time,
+                                             "meta": res.meta}))
+    if samples:
+        arrays["sample_pGamma"] = np.array([x["pGamma"] for x in samples])
+        arrays["sample_profile"] = np.array([x["profile"] for x in samples])
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_suffix(".tmp")
+    with open(tmp, "wb") as fh:
+        np.savez(fh, **arrays)
+    tmp.rename(path)
 
+
+def load_run(path: Path) -> tuple:
+    with np.load(path) as z:
+        arrays = {k: z[k] for k in z.files}
+    scalars = json.loads(str(arrays.pop("scalars")))
+    samples = {k[len("sample_"):]: arrays.pop(k) for k in list(arrays) if k.startswith("sample_")}
+    return CouplingResult(**arrays, provider_time=scalars["provider_time"], wall_time=scalars["wall_time"],
+                          meta=scalars["meta"]), samples
+
+
+def cfd_methods(models: dict) -> list:
+    return ["reference", "baseline_A"] + [f"{k}_A" for k in models]
+
+
+def run_queue(args: argparse.Namespace, ids: list, models: dict, work: Path) -> None:
+    """One subprocess per missing (case, 3D method), longest first, then Mode B + metrics in-process."""
+    severity = {cid: json.loads(str(np.load(args.data / f"{cid}.npz")["header"]))["spec"]["geometry"]["severity"]
+                for cid in ids}
+    by_cost = sorted(ids, key=severity.get, reverse=True)  # severe stenoses need the smallest CFD time steps
+    jobs = [(cid, m) for m in cfd_methods(models) for cid in by_cost if not (work / "raw" / cid / f"{m}.npz").exists()]
+    (work / "logs").mkdir(parents=True, exist_ok=True)
+    log(f"queue: {len(jobs)} 3D runs on {args.jobs} workers")
+    passthrough = ["--data", str(args.data), "--work", str(work), "--cycles", str(args.cycles), "--tol", str(args.tol),
+                   "--substeps", str(args.substeps), "--vessel-length", str(args.vessel_length),
+                   "--wave-speed", str(args.wave_speed)] + [f"--model={m}" for m in args.model]
+    if args.refine:
+        passthrough += ["--refine", str(args.refine)]
+
+    def one(job: tuple) -> bool:
+        cid, method = job
+        log(f"start {cid} {method}")
+        with open(work / "logs" / f"{cid}__{method}.log", "a") as fh:
+            ok = subprocess.run([sys.executable, __file__, *passthrough, "--cases", cid, "--methods", method,
+                                 "--container", f"hemocouple-m3-{cid}-{method}"], stdout=fh, stderr=subprocess.STDOUT
+                                ).returncode == 0
+        log(f"{'done' if ok else 'FAILED'} {cid} {method}")
+        return ok
+
+    with ThreadPoolExecutor(args.jobs) as pool:
+        failed = [j for j, ok in zip(jobs, pool.map(one, jobs)) if not ok]
+    evaluate(args, ids, models, work, ["B"], container=None)
+    if failed:
+        raise SystemExit(f"{len(failed)} 3D runs failed: {failed}")
+
+
+def evaluate(args: argparse.Namespace, ids: list, models: dict, work: Path, methods: list, container) -> None:
     meta = json.loads((args.data / "dataset.json").read_text())
-    splits = json.loads((args.data / "splits.json").read_text())
-    ids = args.cases or [cid for name in args.split.split(",") for cid in splits[name]]
-    ids = [cid for i, cid in enumerate(ids) if i % shard_n == shard_k]
     grid = CrossSectionGrid.gauss_polar(meta["n_r"], meta["n_theta"])
     ref_cfg = ReferenceConfig(**{**meta.get("reference", {}), **({"refine": args.refine} if args.refine else {})})
     lumped = LumpedParams()
-    models = {k: load_checkpoint(Path(v))[0] for k, v in (m.split("=", 1) for m in args.model)}
-    work = args.work.resolve()
     (work / "results").mkdir(parents=True, exist_ok=True)
-    pending = [cid for cid in ids if not (work / "results" / f"{cid}.json").exists()]
-    runner = None if (args.skip_cfd or not pending) else foam.DockerFoam(work, name=f"hemocouple-m3-{shard_k}").start()
+    def want(m: str) -> bool:
+        return "all" in methods or m in methods or ("B" if m.endswith("_B") else "cfd") in methods
+    runner = None
 
     try:
         for cid in ids:
-            out_path = work / "results" / f"{cid}.json"
-            if out_path.exists():
-                continue
+            raw = work / "raw" / cid
             header = json.loads(str(np.load(args.data / f"{cid}.npz")["header"]))
             spec = CaseSpec.from_dict(header["spec"])
             r, period = spec.geometry.radius, spec.flow.period
@@ -113,37 +156,43 @@ def main() -> None:
                                    q_init=q0, p1_init=p0, p_init=p0, local=loc, reduced=reduced, tol=args.tol,
                                    max_iter=30)
 
-            runs, extra = {}, {}
-            if runner is not None:
-                log(f"{cid}: reference (extended 3D, {full.n_cells} cells)")
-                loc = local(work / "cases" / cid / "reference", full, sample_z=l_ext,
-                            planes={"pGamma": l_ext, "pUp": l_ext - ref_cfg.probe_distance})
-                far = WomersleyFluxProfile(wave, grid, r, ref_cfg.viscosity / ref_cfg.density)
-                loc.initialize(far.predict(None, q0, 0.0)[0])
-                runs["reference"] = couple(vessel(args.vessel_length), far, "A", 1, loc=loc)
-                extra["reference"] = loc.samples
-                for name, prov, window in [("baseline_A", PoiseuilleProfile(grid, r), 1)] + [
-                    (f"{k}_A", OperatorProvider(m, spec.features(), r), m.history_length) for k, m in models.items()
-                ]:
-                    log(f"{cid}: {name} (truncated 3D, {trunc.n_cells} cells)")
-                    loc = local(work / "cases" / cid / name, trunc)
-                    loc.initialize(PoiseuilleProfile(grid, r).predict(None, q0, 0.0)[0])
-                    runs[name] = couple(vessel(args.vessel_length + l_ext), prov, "A", window, loc=loc)
+            todo = [m for m in cfd_methods(models) if want(m) and not args.skip_cfd and not (raw / f"{m}.npz").exists()]
+            if todo and runner is None:
+                runner = foam.DockerFoam(work, name=container).start()
+            for name in todo:
+                if name == "reference":
+                    log(f"{cid}: reference (extended 3D, {full.n_cells} cells)")
+                    loc = local(work / "cases" / cid / "reference", full, sample_z=l_ext,
+                                planes={"pGamma": l_ext, "pUp": l_ext - ref_cfg.probe_distance})
+                    far = WomersleyFluxProfile(wave, grid, r, ref_cfg.viscosity / ref_cfg.density)
+                    loc.initialize(far.predict(None, q0, 0.0)[0])
+                    save_run(raw / "reference.npz", couple(vessel(args.vessel_length), far, "A", 1, loc=loc), loc.samples)
+                    continue
+                k = name[: -len("_A")]
+                prov, window = ((PoiseuilleProfile(grid, r), 1) if name == "baseline_A"
+                                else (OperatorProvider(models[k], spec.features(), r), models[k].history_length))
+                log(f"{cid}: {name} (truncated 3D, {trunc.n_cells} cells)")
+                loc = local(work / "cases" / cid / name, trunc)
+                loc.initialize(PoiseuilleProfile(grid, r).predict(None, q0, 0.0)[0])
+                save_run(raw / f"{name}.npz", couple(vessel(args.vessel_length + l_ext), prov, "A", window, loc=loc))
+
             seg = full.length - l_ext
             for name, prov, window in [("1d_only_B", PoiseuilleProfile(grid, r), 1)] + [
                 (f"{k}_B", OperatorProvider(m, spec.features(), r), m.history_length) for k, m in models.items()
             ]:
-                runs[name] = couple(vessel(args.vessel_length + l_ext), prov, "B", window,
-                                    reduced=ReducedSegment(seg, r, ref_cfg, lumped, q0, p0))
+                if want(name) and not (raw / f"{name}.npz").exists():
+                    save_run(raw / f"{name}.npz", couple(vessel(args.vessel_length + l_ext), prov, "B", window,
+                                                         reduced=ReducedSegment(seg, r, ref_cfg, lumped, q0, p0)))
 
+            runs = {f.stem: load_run(f) for f in sorted(raw.glob("*.npz"))} if raw.exists() else {}
+            if not runs:
+                continue
             s = slice(-ref_cfg.steps_per_cycle, None)
             result = {"case_id": cid, "severity": spec.geometry.severity, "cycles": args.cycles, "methods": {}}
-            ref = runs.get("reference")
+            ref, samples = runs.get("reference", (None, None))
             if ref is not None:
-                samples = extra["reference"]
-                p_gamma_ref = np.array([x["pGamma"] for x in samples])
-                prof_ref = np.array([x["profile"] for x in samples])
-            for name, res in runs.items():
+                p_gamma_ref, prof_ref = samples["pGamma"], samples["profile"]
+            for name, (res, _) in runs.items():
                 m = {
                     "converged_all": bool(res.converged.all()), "iterations_mean": float(res.iterations.mean()),
                     "wall_time_s": res.wall_time, "provider_time_s": res.provider_time,
@@ -159,12 +208,44 @@ def main() -> None:
             if ref is not None:
                 result["reference_profile_flux_err_max"] = float(np.max(np.abs(grid.integrate(prof_ref[s], r) - ref.q[s]))
                                                                  / np.mean(np.abs(ref.q[s])))
-            out_path.write_text(json.dumps(result, indent=2))
+            (work / "results" / f"{cid}.json").write_text(json.dumps(result, indent=2))
             log(f"{cid}: " + ", ".join(f"{k} p_Γ err {v.get('p_gamma_rel_rmse', float('nan')):.3f}"
                                         for k, v in result["methods"].items() if k != "reference"))
     finally:
         if runner is not None:
             runner.stop()
+
+
+def main() -> None:
+    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument("--data", type=Path, required=True)
+    ap.add_argument("--split", default="test", help="split name(s), comma-separated, e.g. test,test_ood")
+    ap.add_argument("--cases", nargs="*")
+    ap.add_argument("--model", action="append", default=[], help="name=checkpoint.pt")
+    ap.add_argument("--work", type=Path, required=True)
+    ap.add_argument("--refine", type=float, default=None, help="mesh factor (default: as in the dataset)")
+    ap.add_argument("--cycles", type=int, default=4)
+    ap.add_argument("--substeps", type=int, default=20)
+    ap.add_argument("--vessel-length", type=float, default=0.15, help="1D vessel length upstream of the 3D inlet, m")
+    ap.add_argument("--tol", type=float, default=1e-5)
+    ap.add_argument("--skip-cfd", action="store_true", help="only the Mode B runs (no OpenFOAM)")
+    ap.add_argument("--wave-speed", type=float, default=6.0)
+    ap.add_argument("--shard", default="0/1", help="k/N: evaluate only cases with index %% N == k")
+    ap.add_argument("--methods", nargs="+", default=["all"], help="reference, baseline_A, <model>_A, cfd, B, all")
+    ap.add_argument("--jobs", type=int, default=0, help="run each (case, 3D method) as its own process on N workers")
+    ap.add_argument("--container", default=None, help="Docker container name (default hemocouple-m3-<shard>)")
+    args = ap.parse_args()
+    shard_k, shard_n = (int(x) for x in args.shard.split("/"))
+
+    splits = json.loads((args.data / "splits.json").read_text())
+    ids = args.cases or [cid for name in args.split.split(",") for cid in splits[name]]
+    ids = [cid for i, cid in enumerate(ids) if i % shard_n == shard_k]
+    models = {k: load_checkpoint(Path(v))[0] for k, v in (m.split("=", 1) for m in args.model)}
+    work = args.work.resolve()
+    if args.jobs:
+        run_queue(args, ids, models, work)
+    else:
+        evaluate(args, ids, models, work, args.methods, args.container or f"hemocouple-m3-{shard_k}")
 
 
 if __name__ == "__main__":

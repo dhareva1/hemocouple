@@ -29,7 +29,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 PY = sys.executable
 STAGES = ["check", "dataset", "train", "offline", "coupled", "report"]
-VARIANTS = ["physics_yt", "physics", "data_only", "soft_mass"]
+VARIANTS = ["physics_yt_stokes", "physics_yt", "physics", "data_only", "soft_mass"]
 
 
 def log(msg: str) -> None:
@@ -116,16 +116,16 @@ def stage_coupled(args, data: Path, runs: Path, m3: Path) -> None:
     splits = json.loads((data / "splits.json").read_text())
     names = [s for s in args.coupled_splits.split(",") if splits.get(s)]
     n_cases = sum(len(splits[s]) for s in names)
-    workers = min(args.coupled_workers or perf_cores(), n_cases)
+    workers = args.coupled_workers or perf_cores()
     variants = [v for v in args.variants if v in args.coupled_variants.split(",")]
     margs = []
     for v in variants:
         margs += ["--model", f"{v}={runs / f'{v}.pt'}"]
     log(f"coupled: {n_cases} cases in {','.join(names)}, {workers} workers, models {variants}")
-    procs = [run([PY, "scripts/m3_coupled_eval.py", "--data", data, "--split", ",".join(names), *margs, "--work", m3,
-                  "--cycles", args.coupled_cycles, "--tol", args.coupled_tol, "--shard", f"{k}/{workers}"],
-                 m3 / f"worker_{k}.log") for k in range(workers)]
-    wait_all(procs, "coupled")
+    # One process per (case, 3D method); finished runs are kept in m3/raw and skipped. Logs: m3/queue.log, m3/logs/.
+    wait_all([run([PY, "scripts/m3_coupled_eval.py", "--data", data, "--split", ",".join(names), *margs, "--work", m3,
+                   "--cycles", args.coupled_cycles, "--tol", args.coupled_tol, "--jobs", workers],
+                  m3 / "queue.log")], "coupled")
 
 
 def stage_report(args, work: Path) -> None:
@@ -140,7 +140,7 @@ def main() -> None:
     ap.add_argument("--procs", type=int, default=8, help="MPI ranks per dataset case")
     ap.add_argument("--dataset-workers", type=int, default=0, help="0 = performance cores // procs")
     ap.add_argument("--variants", nargs="+", default=VARIANTS)
-    ap.add_argument("--coupled-variants", default="physics_yt,physics", help="models run in the coupled evaluation")
+    ap.add_argument("--coupled-variants", default="physics_yt_stokes", help="models run in the coupled evaluation")
     ap.add_argument("--coupled-splits", default="test,test_ood")
     ap.add_argument("--coupled-workers", type=int, default=0, help="0 = performance cores")
     ap.add_argument("--coupled-cycles", type=int, default=3)

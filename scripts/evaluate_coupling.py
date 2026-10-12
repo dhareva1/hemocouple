@@ -64,7 +64,7 @@ def main() -> None:
         }
         for name, (model, _) in models.items():
             provider = OperatorProvider(model, spec.features(), spec.geometry.radius)
-            window = model.init_kwargs["window"]
+            window = model.history_length
             for mode in ("A", "B"):
                 runs[f"{name}_{mode}"] = case.run(provider, mode, steps, cycles, window=window, tol=args.tol)
         per_case[cid] = {k: compare_runs(r, ref, steps, zc) for k, r in runs.items()}

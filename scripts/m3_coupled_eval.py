@@ -123,7 +123,7 @@ def main() -> None:
                 runs["reference"] = couple(vessel(args.vessel_length), far, "A", 1, loc=loc)
                 extra["reference"] = loc.samples
                 for name, prov, window in [("baseline_A", PoiseuilleProfile(grid, r), 1)] + [
-                    (f"{k}_A", OperatorProvider(m, spec.features(), r), m.init_kwargs["window"]) for k, m in models.items()
+                    (f"{k}_A", OperatorProvider(m, spec.features(), r), m.history_length) for k, m in models.items()
                 ]:
                     log(f"{cid}: {name} (truncated 3D, {trunc.n_cells} cells)")
                     loc = local(work / "cases" / cid / name, trunc)
@@ -131,7 +131,7 @@ def main() -> None:
                     runs[name] = couple(vessel(args.vessel_length + l_ext), prov, "A", window, loc=loc)
             seg = full.length - l_ext
             for name, prov, window in [("1d_only_B", PoiseuilleProfile(grid, r), 1)] + [
-                (f"{k}_B", OperatorProvider(m, spec.features(), r), m.init_kwargs["window"]) for k, m in models.items()
+                (f"{k}_B", OperatorProvider(m, spec.features(), r), m.history_length) for k, m in models.items()
             ]:
                 runs[name] = couple(vessel(args.vessel_length + l_ext), prov, "B", window,
                                     reduced=ReducedSegment(seg, r, ref_cfg, lumped, q0, p0))

@@ -8,7 +8,7 @@
   "lam_mass": 0.0,
   "lam_pressure": 0.0,
   "epochs": 300,
-  "patience": 30,
+  "patience": 60,
   "seed": 0,
   "dp_prior": "none"
 }

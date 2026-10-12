@@ -5,8 +5,8 @@ computed from the training cases only. Model selection uses the validation
 *data* loss, the same criterion for every variant, applied per output head:
 the profile head (branch, trunk) keeps its state at the best validation
 velocity error, and the dP head (dp_branch, prior scale) keeps its own at the
-best validation dP error. Training stops when both have stalled for
-``patience`` epochs.
+best validation dP error. Each head also has its own optimizer and learning-rate
+schedule. Training stops when both have stalled for ``patience`` epochs.
 """
 
 from __future__ import annotations
@@ -42,12 +42,16 @@ class TrainConfig:
     lam_pressure: float = 0.1
     lam_pde: float = 0.0
     lr: float = 1e-3
+    weight_decay: float = 0.0
+    dropout: float = 0.0
     epochs: int = 300
     batch_size: int = 256
     patience: int = 30
     seed: int = 0
     density: float = 1060.0
     dp_prior: str = "none"
+    velocity_prior: str = "none"
+    prior_window: int = 100
 
     @classmethod
     def from_json(cls, path: Path) -> "TrainConfig":
@@ -82,12 +86,39 @@ def fit_operator(
     torch.manual_seed(cfg.seed)
     np.random.seed(cfg.seed)
     start = _start_index(list(train_records) + list(val_records), cfg)
-    train = build_samples(train_records, cfg.window, start)
-    val = build_samples(val_records, cfg.window, start)
+    steps_per_cycle = int(train_records[0].meta["steps_per_cycle"])
+    history = max(cfg.window, cfg.prior_window) if cfg.velocity_prior == "stokes" else cfg.window
+    train = build_samples(train_records, history, start)
+    val = build_samples(val_records, history, start)
     w = grid.weights
 
-    pod = PODBasis.fit(train["u"], w, cfg.energy, cfg.max_modes)
-    coef = pod.project(train["u"])
+    if cfg.velocity_prior == "stokes":
+        with torch.random.fork_rng():  # keep the network initialization independent of this helper
+            model = OperatorNet(
+                window=cfg.window, n_features=train["g"].shape[1], n_points=grid.n_points, n_modes=1,
+                velocity_prior=cfg.velocity_prior, prior_window=cfg.prior_window, steps_per_cycle=steps_per_cycle,
+            ).double()
+        model.set_statistics(grid_rho=grid.rho)
+        model.init_prior()
+
+    def residual(samples: Dict[str, np.ndarray]) -> np.ndarray:
+        """What the network must supply: the full profile, or the part the prior misses."""
+        if cfg.velocity_prior == "none" or not len(samples["u"]):
+            return samples["u"]
+        with torch.no_grad():
+            t = torch.as_tensor
+            return samples["u"] - model.prior(t(samples["hist"]), t(samples["g"]), t(samples["radius"])).numpy()
+
+    def floor(pod: PODBasis, samples: Dict[str, np.ndarray]) -> float:
+        """Best achievable relative profile error with this basis (7.7)."""
+        if not len(samples["u"]):
+            return float("nan")
+        r = residual(samples)
+        err = r - pod.reconstruct(pod.project(r))
+        return float(np.sqrt(np.sum(err**2 * w) / np.sum(samples["u"] ** 2 * w)))
+
+    pod = PODBasis.fit(residual(train), w, cfg.energy, cfg.max_modes)
+    coef = pod.project(residual(train))
     velocity_scale = float(np.sqrt(np.mean(np.sum(train["u"] ** 2 * w, -1) / w.sum())))
     stats = dict(
         grid_rho=grid.rho, grid_theta=grid.theta, grid_weights=w,
@@ -107,19 +138,28 @@ def fit_operator(
     model = OperatorNet(
         window=cfg.window, n_features=train["g"].shape[1], n_points=grid.n_points, n_modes=pod.n_modes,
         basis=cfg.basis, hidden=cfg.hidden, depth=cfg.depth, project=cfg.project,
-        dp_prior=cfg.dp_prior, density=cfg.density,
+        dp_prior=cfg.dp_prior, density=cfg.density, dropout=cfg.dropout,
+        velocity_prior=cfg.velocity_prior, prior_window=cfg.prior_window, steps_per_cycle=steps_per_cycle,
     ).double()
     model.set_statistics(**stats)
+    if cfg.velocity_prior == "stokes":
+        model.init_prior()
 
     tr, va = _to_torch(train), _to_torch(val)
     wt = torch.as_tensor(w, dtype=torch.float64)
     lam = cfg.loss_weights()
-    opt = torch.optim.Adam(model.parameters(), lr=cfg.lr)
-    sched = torch.optim.lr_scheduler.ReduceLROnPlateau(opt, factor=0.5, patience=max(cfg.patience // 3, 1))
+    dp_keys = {k for k in model.state_dict() if k.startswith("dp_branch.") or k == "prior_scale"}
+    # One optimizer and LR schedule per head, each driven by its own validation error, so a head that
+    # converges early does not change the other's learning rate (mirrors the per-head model selection).
+    groups = {"velocity": [p for k, p in model.named_parameters() if k not in dp_keys],
+              "dp": [p for k, p in model.named_parameters() if k in dp_keys]}
+    opts = {h: (torch.optim.AdamW(ps, lr=cfg.lr, weight_decay=cfg.weight_decay) if cfg.weight_decay > 0
+                else torch.optim.Adam(ps, lr=cfg.lr)) for h, ps in groups.items()}
+    scheds = {h: torch.optim.lr_scheduler.ReduceLROnPlateau(o, factor=0.5, patience=max(cfg.patience // 3, 1))
+              for h, o in opts.items()}
 
     n = len(tr["q"])
     history: Dict[str, List[float]] = {"train_total": [], "val_data": [], "val_velocity": [], "val_dp": []}
-    dp_keys = {k for k in model.state_dict() if k.startswith("dp_branch.") or k == "prior_scale"}
     best = {"velocity": [np.inf, copy.deepcopy(model.state_dict()), 0], "dp": [np.inf, copy.deepcopy(model.state_dict()), 0]}
     for epoch in range(cfg.epochs):
         model.train()
@@ -130,9 +170,11 @@ def fit_operator(
             batch = {k: v[idx] for k, v in tr.items()}
             out = model(batch["hist"], batch["g"], batch["q"], batch["radius"])
             loss, _ = objective(out, batch, wt, lam, scales, cfg.density)
-            opt.zero_grad()
+            for o in opts.values():
+                o.zero_grad()
             loss.backward()
-            opt.step()
+            for o in opts.values():
+                o.step()
             epoch_loss += loss.item() * len(idx)
 
         model.eval()
@@ -140,7 +182,8 @@ def fit_operator(
             out = model(va["hist"], va["g"], va["q"], va["radius"])
             _, parts = objective(out, va, wt, LossWeights(1.0, 0.0, 0.0, 0.0), scales, cfg.density)
         val_data = parts["data"]
-        sched.step(val_data)
+        for head, sch in scheds.items():
+            sch.step(parts[head])
         history["train_total"].append(epoch_loss / n)
         history["val_data"].append(val_data)
         history["val_velocity"].append(parts["velocity"])
@@ -162,8 +205,8 @@ def fit_operator(
     info = {
         "n_modes": pod.n_modes,
         "pod_energy": pod.captured_energy,
-        "pod_projection_error_train": pod.projection_error(train["u"]),
-        "pod_projection_error_val": pod.projection_error(val["u"]) if len(val["u"]) else float("nan"),
+        "pod_projection_error_train": floor(pod, train),
+        "pod_projection_error_val": floor(pod, val),
         "best_val_data": float(best_val),
         "best_val_velocity": float(best["velocity"][0]),
         "best_val_dp": float(best["dp"][0]),

@@ -71,3 +71,40 @@ def test_young_tsai_prior_scales_quadratically(grid):
     assert yt[1].item() == pytest.approx(0.5 * 1060 * 1.52 * 9.0 * u * u)
     assert yt[2].item() == 0.0
     assert model.young_tsai(g, -q, r)[0].item() == pytest.approx(-yt[0].item())
+
+
+def test_stokes_prior_is_causal_womersley(grid):
+    from hemocouple.stokes import NU_BLOOD, stokes_basis, stokes_prior
+    from hemocouple.waveforms import FourierWaveform
+    from hemocouple.womersley import WomersleyProfile
+
+    wave = FourierWaveform(period=0.8, mean=5e-6, coeffs=np.array([2e-6 - 1e-6j, 1e-6j, 5e-7]))
+    radius, steps = 3e-3, 100
+    t = np.arange(3 * steps + 1) * wave.period / steps
+    lam, phi, b = stokes_basis(grid.rho)
+    T = lambda x: torch.as_tensor(np.asarray(x, dtype=np.float64))  # noqa: E731
+    u = stokes_prior(T(wave(t))[None], T([radius]), T([wave.period / steps]), T(grid.rho), T(lam), T(phi), T(b))[0].numpy()
+    ref = WomersleyProfile(wave, radius, NU_BLOOD, grid.rho)(t[-1])
+    assert np.sqrt(np.sum((u - ref) ** 2 * grid.weights) / np.sum(ref**2 * grid.weights)) < 2e-3
+    assert abs(grid.integrate(u, radius) - wave(t[-1])) / wave.mean < 1e-3
+    # Only past Q enters: a constant history gives exactly the Poiseuille profile.
+    flat = stokes_prior(T(np.full((1, 50), 4e-6)), T([radius]), T([8e-3]), T(grid.rho), T(lam), T(phi), T(b))[0].numpy()
+    np.testing.assert_allclose(flat, 4e-6 * 2 * (1 - grid.rho**2) / (math.pi * radius**2), rtol=1e-12)
+
+
+def test_stokes_prior_model_keeps_exact_flux_and_roundtrips(grid):
+    torch.manual_seed(0)
+    model = OperatorNet(window=4, n_features=4, n_points=grid.n_points, n_modes=3, velocity_prior="stokes",
+                        prior_window=30, steps_per_cycle=100).double()
+    model.set_statistics(grid_rho=grid.rho, grid_theta=grid.theta, grid_weights=grid.weights,
+                         pod_modes=np.linalg.qr(np.random.default_rng(0).normal(size=(grid.n_points, 3)))[0])
+    model.init_prior()
+    assert model.history_length == 30
+    hist = torch.rand(5, 30, 2, dtype=torch.float64) * 1e-5
+    g = torch.tensor([[3e-3, 0.5, 3.0, 0.8]] * 5, dtype=torch.float64)
+    radius = torch.full((5,), 3e-3, dtype=torch.float64)
+    out = model(hist, g, hist[:, -1, 0], radius)
+    flux = radius**2 * (out["u"] @ torch.as_tensor(grid.weights))
+    torch.testing.assert_close(flux, hist[:, -1, 0], rtol=1e-10, atol=0)
+    again = OperatorNet.from_checkpoint(model.checkpoint()).double()
+    torch.testing.assert_close(again(hist, g, hist[:, -1, 0], radius)["u"], out["u"])

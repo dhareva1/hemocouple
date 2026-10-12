@@ -35,7 +35,7 @@ def test_train_and_couple(records, specs, grid, tmp_path):
     for model, exact in ((phys, True), (data, False)):
         provider = OperatorProvider(model, spec.features(), spec.geometry.radius)
         for mode in ("A", "B"):
-            res = case.run(provider, mode, STEPS_PER_CYCLE, 2, window=model.init_kwargs["window"], tol=1e-8)
+            res = case.run(provider, mode, STEPS_PER_CYCLE, 2, window=model.history_length, tol=1e-8)
             assert np.isfinite(res.p_interface).all()
             mass = np.abs(res.q_local - res.q).max() / np.abs(res.q).mean()
             if exact:

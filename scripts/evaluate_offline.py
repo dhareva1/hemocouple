@@ -57,7 +57,7 @@ def main() -> None:
         r = rec.radius
         row = {"severity": spec.geometry.severity, "label_flux_correction_max": rec.meta.get("label_flux_correction_max")}
         for name, (model, info) in models.items():
-            window = model.init_kwargs["window"]
+            window = model.history_length
             warm = (args.warmup_cycles if args.warmup_cycles is not None else info["config"]["warmup_cycles"]) * steps
             s = build_samples([rec], window, warm)
             t = torch.as_tensor

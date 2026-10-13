@@ -415,6 +415,15 @@ def _fmt_time(t: float) -> str:
     return f"{t:.12g}"
 
 
+def _name_precision(case: Path, minimum: int = 12) -> int:
+    """Significant digits of the latest time directory name (at least ``minimum``)."""
+    dirs = time_dirs(case)
+    if not dirs:
+        return minimum
+    digits = dirs[-1][1].name.lower().split("e")[0].replace(".", "").replace("-", "").lstrip("0")
+    return max(minimum, len(digits))
+
+
 def _rings(grid: CrossSectionGrid) -> Tuple[np.ndarray, int]:
     radii = np.unique(grid.rho)
     n_theta = grid.n_points // len(radii)
@@ -565,7 +574,11 @@ class FoamLocal3D:
         write_outlet_pressure(self.case, [(self.t, self.p_distal / rho), (t_next, p_distal / rho)])
         shutil.rmtree(self.case / "postProcessing", ignore_errors=True)
         ctrl = self.case / "system" / "controlDict"
-        ctrl.write_text(re.sub(r"endTime\s+[^;]+;", f"endTime         {_fmt_time(t_next)};", ctrl.read_text(), count=1))
+        text = re.sub(r"endTime\s+[^;]+;", f"endTime         {_fmt_time(t_next)};", ctrl.read_text(), count=1)
+        # startFrom latestTime looks the restart directory up by re-formatting its time with timePrecision. OpenFOAM
+        # sometimes writes a name with more digits than that and then cannot find it, so match the latest name.
+        text = re.sub(r"timePrecision\s+[^;]+;", f"timePrecision   {_name_precision(self.case)};", text, count=1)
+        ctrl.write_text(text)
         tic = time.perf_counter()
         self.foam.run(self.case, "pimpleFoam", log="log.pimpleFoam")
         self.solver_time += time.perf_counter() - tic

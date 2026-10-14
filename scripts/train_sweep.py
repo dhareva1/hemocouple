@@ -36,6 +36,7 @@ REGS = {
     "h64": {"hidden": 64},
     "do0.1_stokes": {"dropout": 0.1, "velocity_prior": "stokes"},
     "do0.1_stokes_nop": {"dropout": 0.1, "velocity_prior": "stokes", "lam_pressure": 0.0},
+    "do0.1_trunk": {"dropout": 0.1, "basis": "trunk"},
 }
 SEEDS = [0, 1, 2, 3, 4]
 SPLITS = ["val", "test", "test_ood"]
@@ -120,7 +121,7 @@ def summarize(args: argparse.Namespace) -> None:
         lines += [f"## {split} (chosen setting; base, dropout and Stokes-prior runs for comparison)", "",
                   "| Variant | Reg | profile L2 | dP RMSE / range | mass err |", "|---|---|---|---|---|"]
         for v in VARIANTS:
-            for reg in dict.fromkeys([chosen[v], "base", "do0.1", "do0.1_stokes", "do0.1_stokes_nop"]):
+            for reg in dict.fromkeys([chosen[v], "base", "do0.1", "do0.1_stokes", "do0.1_stokes_nop", "do0.1_trunk"]):
                 rs = [run_name(v, reg, s) for s in SEEDS if run_name(v, reg, s) in info]
                 if not rs:
                     continue

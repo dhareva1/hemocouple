@@ -11,7 +11,7 @@
   "patience": 60,
   "seed": 0,
   "dp_prior": "young_tsai",
-  "dropout": 0.1,
   "velocity_prior": "stokes",
-  "prior_window": 100
+  "prior_window": 100,
+  "weight_decay": 0.1
 }

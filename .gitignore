@@ -6,3 +6,4 @@ __pycache__/
 data/
 runs/
 *.pt
+.DS_Store

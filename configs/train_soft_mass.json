@@ -7,7 +7,7 @@
   "lam_data": 1.0,
   "lam_mass": 1.0,
   "lam_pressure": 0.1,
-  "epochs": 300,
+  "epochs": 2000,
   "patience": 60,
   "seed": 0,
   "dp_prior": "none"

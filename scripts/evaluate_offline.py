@@ -5,7 +5,8 @@
 For every sample after warm-up, the operator gets the reference (Q, P_up) history window and is compared with:
     profile: Poiseuille (quasi-steady, conventional) and Womersley (analytic, uses the whole periodic
              waveform in advance, so it is an optimistic baseline) inlet profiles
-    dP:      1D-only (dP = 0)
+    dP:      1D-only (dP = 0), lumped Young-Tsai stenosis model with literature coefficients (young_tsai) and
+             with per-term scales fitted on the training split (young_tsai_cal, stenosis.py)
 Metrics are relative to each case's label scale and are averaged over cases.
 """
 
@@ -26,6 +27,7 @@ warnings.filterwarnings("ignore", message=".*encountered in matmul", category=Ru
 from hemocouple.cross_section import CrossSectionGrid  # noqa: E402
 from hemocouple.dataset import build_samples, load_records  # noqa: E402
 from hemocouple.geometry import CaseSpec  # noqa: E402
+from hemocouple.stenosis import YoungTsai, backward_dqdt  # noqa: E402
 from hemocouple.train import load_checkpoint  # noqa: E402
 from hemocouple.womersley import WomersleyProfile  # noqa: E402
 
@@ -50,6 +52,7 @@ def main() -> None:
     w = grid.weights
     models = {k: load_checkpoint(Path(v)) for k, v in (m.split("=", 1) for m in args.model)}
     steps = meta["steps_per_cycle"]
+    lumped = {"young_tsai": YoungTsai(), "young_tsai_cal": YoungTsai.calibrated_on(args.data)}
 
     per_case = {}
     for rec in load_records(args.data, ids):
@@ -75,6 +78,9 @@ def main() -> None:
             row["poiseuille_profile_rel_l2"] = rel_l2(pois, s["u"], w)
             row["womersley_profile_rel_l2"] = rel_l2(wom, s["u"], w)
             row["1d_only_dp_rel_rmse"] = float(np.sqrt(np.mean(s["dp"] ** 2)) / dp_scale)
+            dqdt = backward_dqdt(rec.q, float(rec.t[1] - rec.t[0]))[idx]
+            for k, yt in lumped.items():
+                row[f"{k}_dp_rel_rmse"] = float(np.sqrt(np.mean((yt.dp(spec, s["q"], dqdt) - s["dp"]) ** 2)) / dp_scale)
             row["dp_label_range_pa"] = [float(s["dp"].min()), float(s["dp"].max())]
         per_case[rec.case_id] = row
 

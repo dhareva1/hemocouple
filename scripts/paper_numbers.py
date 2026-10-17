@@ -37,7 +37,8 @@ OFFLINE_ROWS = [
     ("physics", f"{SHARED}_stokes", "Ablation: projection + Stokes prior, no Young-Tsai prior"),
 ]
 COUPLED = [("baseline_A", "Mode A, Poiseuille inlet"), ("physics_yt_stokes_A", "Mode A, operator inlet"),
-           ("physics_yt_stokes_B", "Mode B, operator"), ("1d_only_B", "Mode B, 1D only")]
+           ("physics_yt_stokes_B", "Mode B, operator"), ("young_tsai_cal_B", "Mode B, calibrated Young-Tsai"),
+           ("young_tsai_B", "Mode B, Young-Tsai"), ("1d_only_B", "Mode B, 1D only")]
 
 
 def runs(variant: str, setting: str) -> list:
@@ -126,12 +127,22 @@ def offline_numbers(work: Path) -> dict:
     out["final_model"] = {"run": best, "n_modes": info[best]["n_modes"], "epochs": info[best]["epochs_run"],
                           "training_time_s": round(info[best]["training_time_s"], 1),
                           "pod_floor_val": info[best]["pod_projection_error_val"]}
+
+    # Lumped Young-Tsai stenosis baselines (stenosis.py) on the final model's samples.
+    for sp in ("test", "test_ood"):
+        e = evaluate(m2, sp, {best: sweep / f"{best}.pt"}, sweep / f"eval_{sp}_lumped.json")
+        out["baselines"][sp].update({f"{k}_dp_pct": round(e[f"{k}_dp_rel_rmse"] * 100, 2)
+                                     for k in ("young_tsai", "young_tsai_cal")})
+    sys.path.insert(0, str(ROOT / "src"))
+    from hemocouple.stenosis import YoungTsai  # noqa: E402
+
+    out["young_tsai_cal_scales"] = [round(x, 3) for x in YoungTsai.calibrated_on(m2).scales]
     return out
 
 
 def coupled_numbers(work: Path, dataset: dict, offline: dict) -> dict:
     res = [json.loads(p.read_text()) for p in sorted((work / "m3" / "results").glob("*.json"))]
-    col = lambda m, k: np.array([r["methods"][m][k] for r in res])  # noqa: E731
+    col = lambda m, k: np.array([r["methods"][m][k] for r in res if k in r["methods"][m]])  # noqa: E731
     ref_wall = col("reference", "wall_time_s").mean()
     out = {"n_cases": len(res), "table": {}}
     for m, label in COUPLED:
@@ -139,6 +150,7 @@ def coupled_numbers(work: Path, dataset: dict, offline: dict) -> dict:
             "label": label,
             "p_gamma_pct": round(col(m, "p_gamma_rel_rmse").mean() * 100, 2),
             "q_pct": round(col(m, "q_rel_rmse").mean() * 100, 2),
+            "dp_pct": round(col(m, "dp_rel_rmse").mean() * 100, 2),
             "reflection_abs_diff": round(col(m, "reflection_abs_diff").mean(), 4),
             "mass_err_max": float(col(m, "mass_err_max").max()),
             "cost_vs_reference": float(col(m, "wall_time_s").mean() / ref_wall),
@@ -152,14 +164,21 @@ def coupled_numbers(work: Path, dataset: dict, offline: dict) -> dict:
         x, y = col(a, k), col(b, k)
         return {"better": int(np.sum(x < y)), "of": len(x), "median_change_pct": round(float(np.median((x - y) / y)) * 100, 1)}
 
+    out["n_stenosed"] = len(col("baseline_A", "dp_rel_rmse"))
     out["A_vs_baseline"] = {k: paired("physics_yt_stokes_A", "baseline_A", k)
-                            for k in ("p_gamma_rel_rmse", "reflection_abs_diff", "q_rel_rmse")}
-    out["B_vs_1d"] = {k: paired("physics_yt_stokes_B", "1d_only_B", k) for k in ("p_gamma_rel_rmse", "q_rel_rmse")}
+                            for k in ("p_gamma_rel_rmse", "dp_rel_rmse", "reflection_abs_diff", "q_rel_rmse")}
+    out["B_vs_1d"] = {k: paired("physics_yt_stokes_B", "1d_only_B", k) for k in ("p_gamma_rel_rmse", "dp_rel_rmse", "q_rel_rmse")}
+    out["B_vs_young_tsai_cal"] = {k: paired("physics_yt_stokes_B", "young_tsai_cal_B", k)
+                                  for k in ("p_gamma_rel_rmse", "dp_rel_rmse", "q_rel_rmse", "reflection_abs_diff")}
     out["B_vs_A_q_median_change_pct"] = paired("physics_yt_stokes_B", "physics_yt_stokes_A", "q_rel_rmse")["median_change_pct"]
     sev = np.array([r["severity"] for r in res]) >= 0.55
     out["severe_cases"] = {"n": int(sev.sum()),
                            "1d_only_B_pct": round(float(col("1d_only_B", "p_gamma_rel_rmse")[sev].mean()) * 100, 1),
-                           "operator_B_pct": round(float(col("physics_yt_stokes_B", "p_gamma_rel_rmse")[sev].mean()) * 100, 1)}
+                           "young_tsai_B_pct": round(float(col("young_tsai_B", "p_gamma_rel_rmse")[sev].mean()) * 100, 1),
+                           "young_tsai_cal_B_pct": round(float(col("young_tsai_cal_B", "p_gamma_rel_rmse")[sev].mean()) * 100, 2),
+                           "operator_B_pct": round(float(col("physics_yt_stokes_B", "p_gamma_rel_rmse")[sev].mean()) * 100, 2),
+                           "dp_pct": {m: round(float(col(m, "dp_rel_rmse")[sev[[r["severity"] > 0 for r in res]]].mean()) * 100, 2)
+                                      for m, _ in COUPLED}}
     # Break-even number of runs for Mode B against the conventional Mode A coupling (serial runs: wall = core time).
     c_off = dataset["generation_core_hours"] + offline["final_model"]["training_time_s"] / 3600
     c_base = float(col("baseline_A", "wall_time_s").mean()) / 3600
@@ -218,15 +237,21 @@ def to_markdown(n: dict) -> str:
     b = o["baselines"]
     lines += [f"| Poiseuille inlet | {b['test']['poiseuille_profile_pct']} | {b['test_ood']['poiseuille_profile_pct']} | – | – | – |",
               f"| Womersley inlet | {b['test']['womersley_profile_pct']} | {b['test_ood']['womersley_profile_pct']} | – | – | – |",
-              f"| 1D only | – | – | {b['test']['1d_only_dp_pct']} | {b['test_ood']['1d_only_dp_pct']} | – |", "",
+              f"| 1D only | – | – | {b['test']['1d_only_dp_pct']} | {b['test_ood']['1d_only_dp_pct']} | – |",
+              f"| 1D + Young-Tsai stenosis model | – | – | {b['test']['young_tsai_dp_pct']} | {b['test_ood']['young_tsai_dp_pct']} | – |",
+              f"| 1D + calibrated Young-Tsai (scales {o['young_tsai_cal_scales']}, fitted on train) | – | – | "
+              f"{b['test']['young_tsai_cal_dp_pct']} | {b['test_ood']['young_tsai_cal_dp_pct']} | – |", "",
               f"## Coupled ({c['n_cases']} cases, last of three cycles)", "",
-              "| Method | P_Γ (%) | Q (%) | Reflection abs. diff. | Max flux error | Cost vs reference |", "|---|---|---|---|---|---|"]
+              f"ΔP_Γ = P_Γ − P_lin(Q), error relative to the reference range, mean over the {c['n_stenosed']} stenosed cases.", "",
+              "| Method | P_Γ (%) | ΔP_Γ (%) | Q (%) | Reflection abs. diff. | Max flux error | Cost vs reference |",
+              "|---|---|---|---|---|---|---|"]
     for m, t in c["table"].items():
-        lines.append(f"| {t['label']} | {t['p_gamma_pct']} | {t['q_pct']} | {t['reflection_abs_diff']} | "
+        lines.append(f"| {t['label']} | {t['p_gamma_pct']} | {t['dp_pct']} | {t['q_pct']} | {t['reflection_abs_diff']} | "
                      f"{t['mass_err_max']:.0e} | " + (f"{t['cost_vs_reference']:.2f}" if t['cost_vs_reference'] > 0.01
                                                      else f"≈1/{1 / t['cost_vs_reference']:,.0f}") + " |")
     lines += ["", f"- iterations (case means): {c['iterations_mean_range']}; all converged: {c['all_converged']}",
               f"- Mode A operator vs Poiseuille: {c['A_vs_baseline']}",
+              f"- Mode B operator vs calibrated Young-Tsai: {c['B_vs_young_tsai_cal']}",
               f"- Mode B operator vs 1D only: {c['B_vs_1d']}; Q error vs Mode A: {c['B_vs_A_q_median_change_pct']:+}% (median)",
               f"- severe cases (severity ≥ 0.55): {c['severe_cases']}",
               f"- break-even: {c['break_even']}"]

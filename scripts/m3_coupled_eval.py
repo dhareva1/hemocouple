@@ -9,8 +9,12 @@ For every case:
     baseline_A  1D vessel (L + L_ext) coupled at Γ to the truncated 3D domain, Poiseuille inlet profile
     <model>_A   same, with the operator's inlet profile
     1d_only_B   1D vessel (L + L_ext) + reduced segment, ΔP = 0 (no 3D)
+    young_tsai_B, young_tsai_cal_B
+                same, with the lumped Young-Tsai stenosis ΔP (literature / training-calibrated coefficients)
     <model>_B   same, with the operator's ΔP
-Metrics are over the last cycle, compared with the reference at Γ. Results go to <work>/results/<case>.json.
+Metrics are over the last cycle, compared with the reference at Γ. dp_rel_rmse is the error of the stenosis
+pressure drop P_Γ - P_lin(Q) (the offline label, P_lin = uniform segment + Windkessel) relative to the reference's
+range, for stenosed cases. Results go to <work>/results/<case>.json.
 
 Every run's time series is saved to <work>/raw/<case>/<method>.npz and skipped if present, so a new model
 only needs its own runs. --methods picks runs (reference, baseline_A, <model>_A, cfd = all 3D runs, B = all
@@ -43,7 +47,8 @@ from hemocouple.metrics import characteristic_impedance, mass_error, reflection_
 from hemocouple.mock import LumpedParams  # noqa: E402
 from hemocouple.oned import OneDVessel, VesselParams  # noqa: E402
 from hemocouple.providers import OperatorProvider, PoiseuilleProfile, WomersleyFluxProfile  # noqa: E402
-from hemocouple.reference import ReducedSegment, ReferenceConfig  # noqa: E402
+from hemocouple.reference import ReducedSegment, ReferenceConfig, linear_interface_pressure  # noqa: E402
+from hemocouple.stenosis import YoungTsai, YoungTsaiProvider  # noqa: E402
 from hemocouple.train import load_checkpoint  # noqa: E402
 
 
@@ -121,6 +126,7 @@ def evaluate(args: argparse.Namespace, ids: list, models: dict, work: Path, meth
     grid = CrossSectionGrid.gauss_polar(meta["n_r"], meta["n_theta"])
     ref_cfg = ReferenceConfig(**{**meta.get("reference", {}), **({"refine": args.refine} if args.refine else {})})
     lumped = LumpedParams()
+    young_tsai = {"young_tsai_B": YoungTsai(), "young_tsai_cal_B": YoungTsai.calibrated_on(args.data)}
     (work / "results").mkdir(parents=True, exist_ok=True)
     def want(m: str) -> bool:
         return "all" in methods or m in methods or ("B" if m.endswith("_B") else "cfd") in methods
@@ -178,6 +184,8 @@ def evaluate(args: argparse.Namespace, ids: list, models: dict, work: Path, meth
 
             seg = full.length - l_ext
             for name, prov, window in [("1d_only_B", PoiseuilleProfile(grid, r), 1)] + [
+                (k, YoungTsaiProvider(yt, spec, grid, dt), YoungTsaiProvider.history_length) for k, yt in young_tsai.items()
+            ] + [
                 (f"{k}_B", OperatorProvider(m, spec.features(), r), m.history_length) for k, m in models.items()
             ]:
                 if want(name) and not (raw / f"{name}.npz").exists():
@@ -190,8 +198,10 @@ def evaluate(args: argparse.Namespace, ids: list, models: dict, work: Path, meth
             s = slice(-ref_cfg.steps_per_cycle, None)
             result = {"case_id": cid, "severity": spec.geometry.severity, "cycles": args.cycles, "methods": {}}
             ref, samples = runs.get("reference", (None, None))
+            stenosis_dp = lambda res, p: (p - linear_interface_pressure(res.q, dt, seg, r, ref_cfg, lumped, p0))[s]  # noqa: E731
             if ref is not None:
                 p_gamma_ref, prof_ref = samples["pGamma"], samples["profile"]
+                dp_ref = stenosis_dp(ref, p_gamma_ref)
             for name, (res, _) in runs.items():
                 m = {
                     "converged_all": bool(res.converged.all()), "iterations_mean": float(res.iterations.mean()),
@@ -204,6 +214,9 @@ def evaluate(args: argparse.Namespace, ids: list, models: dict, work: Path, meth
                     m["p_gamma_rel_rmse"] = relative_rmse(res.p_interface[s], p_gamma_ref[s])
                     m["q_rel_rmse"] = relative_rmse(res.q[s], ref.q[s])
                     m["reflection_abs_diff"] = abs(m["reflection_1d"] - reflection_coefficient(ref.p1d[s], ref.q[s], zc))
+                    if spec.geometry.severity > 0:
+                        m["dp_rel_rmse"] = float(np.sqrt(np.mean((stenosis_dp(res, res.p_interface) - dp_ref) ** 2))
+                                                 / np.ptp(dp_ref))
                 result["methods"][name] = m
             if ref is not None:
                 result["reference_profile_flux_err_max"] = float(np.max(np.abs(grid.integrate(prof_ref[s], r) - ref.q[s]))

@@ -170,6 +170,18 @@ def coupled_numbers(work: Path, dataset: dict, offline: dict) -> dict:
     out["B_vs_1d"] = {k: paired("physics_yt_stokes_B", "1d_only_B", k) for k in ("p_gamma_rel_rmse", "dp_rel_rmse", "q_rel_rmse")}
     out["B_vs_young_tsai_cal"] = {k: paired("physics_yt_stokes_B", "young_tsai_cal_B", k)
                                   for k in ("p_gamma_rel_rmse", "dp_rel_rmse", "q_rel_rmse", "reflection_abs_diff")}
+    splits = json.loads((work / "m2" / "splits.json").read_text())
+    out["dp_pct_by_split"] = {sp: {m: round(float(np.mean([r["methods"][m]["dp_rel_rmse"] for r in res
+                                                            if r["case_id"] in splits[sp] and "dp_rel_rmse" in r["methods"][m]])) * 100, 2)
+                                   for m, _ in COUPLED} for sp in ("test", "test_ood")}
+    # Mode B for all five seeds of the final setting (m3_coupled_eval.py --skip-cfd --model seed<k>=...).
+    seeds = [f"seed{k}_B" for k in SEEDS]
+    if all(m in res[0]["methods"] for m in seeds):
+        out["B_seeds"] = {k: {"mean_pct": round(float(np.mean([col(m, k).mean() for m in seeds])) * 100, 2),
+                              "std_pct": round(float(np.std([col(m, k).mean() for m in seeds], ddof=1)) * 100, 2),
+                              "better_than_young_tsai_cal": [int(np.sum(col(m, k) < col("young_tsai_cal_B", k))) for m in seeds],
+                              "of": len(col("young_tsai_cal_B", k))}
+                          for k in ("p_gamma_rel_rmse", "dp_rel_rmse", "q_rel_rmse", "reflection_abs_diff")}
     out["B_vs_A_q_median_change_pct"] = paired("physics_yt_stokes_B", "physics_yt_stokes_A", "q_rel_rmse")["median_change_pct"]
     sev = np.array([r["severity"] for r in res]) >= 0.55
     out["severe_cases"] = {"n": int(sev.sum()),
@@ -254,6 +266,8 @@ def to_markdown(n: dict) -> str:
               f"- Mode B operator vs calibrated Young-Tsai: {c['B_vs_young_tsai_cal']}",
               f"- Mode B operator vs 1D only: {c['B_vs_1d']}; Q error vs Mode A: {c['B_vs_A_q_median_change_pct']:+}% (median)",
               f"- severe cases (severity ≥ 0.55): {c['severe_cases']}",
+              f"- ΔP_Γ by split (stenosed cases): {c['dp_pct_by_split']}",
+              f"- Mode B, five seeds of the final setting (mean ± s.d. of case means; reflection ×100): {c.get('B_seeds')}",
               f"- break-even: {c['break_even']}"]
     if n.get("regen"):
         g = n["regen"]

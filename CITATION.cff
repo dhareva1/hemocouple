@@ -1,0 +1,18 @@
+cff-version: 1.2.0
+message: "If you use this code or dataset, please cite it as below."
+title: "hemocouple: physics-informed neural operators with exact flux projection for 1D-3D hemodynamic interface coupling"
+authors:
+  - family-names: Hareva
+    given-names: David
+    affiliation: Universitas Pelita Harapan
+    email: david.hareva@uph.edu
+version: 1.0.0
+date-released: 2026-10-19
+license: MIT
+repository-code: "https://github.com/dhareva1/hemocouple"
+keywords:
+  - multiscale hemodynamics
+  - neural operator
+  - 1D-3D coupling
+  - mass conservation
+  - arterial stenosis

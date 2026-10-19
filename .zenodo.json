@@ -1,0 +1,11 @@
+{
+  "title": "hemocouple: physics-informed neural operators with exact flux projection for 1D-3D hemodynamic interface coupling (code, reference dataset and results)",
+  "upload_type": "software",
+  "description": "Code, the 56-case OpenFOAM reference dataset of pulsatile flow through parametric axisymmetric stenoses, the final trained interface operator, and the coupled-evaluation results for the article 'Physics-informed neural operators with exact flux projection for 1D-3D hemodynamic interface coupling'. Code under the MIT license; dataset and results under CC BY 4.0.",
+  "creators": [
+    {"name": "Hareva, David", "affiliation": "Universitas Pelita Harapan"}
+  ],
+  "license": "MIT",
+  "keywords": ["multiscale hemodynamics", "neural operator", "1D-3D coupling", "mass conservation", "arterial stenosis", "OpenFOAM"],
+  "access_right": "open"
+}

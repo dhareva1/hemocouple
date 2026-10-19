@@ -1,0 +1,113 @@
+[09:16:17] [1/56] sten0000: R=3.71 mm, severity=0.25, Ls/R=3.7, Qmean=4.5 ml/s, T=0.77 s
+[09:27:07]     done in 649 s, 160560 cells; label flux correction max 0.38%; dp range -39..66 Pa
+[09:27:08] [2/56] sten0001: R=3.67 mm, severity=0.57, Ls/R=2.9, Qmean=5.2 ml/s, T=0.83 s
+[09:39:31]     done in 742 s, 156240 cells; label flux correction max 0.77%; dp range -63..192 Pa
+[09:39:31] [3/56] sten0002: R=3.01 mm, severity=0.20, Ls/R=2.1, Qmean=6.6 ml/s, T=0.97 s
+[09:51:58]     done in 745 s, 151920 cells; label flux correction max 0.35%; dp range -51..95 Pa
+[09:51:58] [4/56] sten0003: R=3.10 mm, severity=0.61, Ls/R=3.3, Qmean=6.1 ml/s, T=0.91 s
+[10:12:18]     done in 1218 s, 158400 cells; label flux correction max 0.44%; dp range -2..217 Pa
+[10:12:19] [5/56] sten0004: R=3.88 mm, severity=0.51, Ls/R=4.0, Qmean=7.8 ml/s, T=0.70 s
+[10:20:02]     done in 461 s, 162000 cells; label flux correction max 0.36%; dp range -22..106 Pa
+[10:20:02] [6/56] sten0005: R=3.38 mm, severity=0.31, Ls/R=2.4, Qmean=5.5 ml/s, T=0.81 s
+[10:27:05]     done in 421 s, 153360 cells; label flux correction max 1.13%; dp range -68..106 Pa
+[10:27:05] [7/56] sten0006: R=3.20 mm, severity=0.28, Ls/R=2.2, Qmean=5.8 ml/s, T=0.94 s
+[10:36:18]     done in 552 s, 151920 cells; label flux correction max 0.29%; dp range -67..96 Pa
+[10:36:18] [8/56] sten0007: R=3.62 mm, severity=0.35, Ls/R=3.0, Qmean=5.9 ml/s, T=0.90 s
+[10:43:34]     done in 433 s, 156240 cells; label flux correction max 0.38%; dp range -38..80 Pa
+[10:43:34] [9/56] sten0008: R=3.58 mm, severity=0.74, Ls/R=2.7, Qmean=6.3 ml/s, T=0.74 s
+[11:12:00]     done in 1704 s, 154800 cells; label flux correction max 0.44%; dp range 40..471 Pa
+[11:12:00] [10/56] sten0009: R=3.75 mm, severity=0.37, Ls/R=4.5, Qmean=7.5 ml/s, T=0.82 s
+[11:20:32]     done in 510 s, 164880 cells; label flux correction max 0.27%; dp range -46..98 Pa
+[11:20:32] [11/56] sten0010: R=3.39 mm, severity=0.53, Ls/R=5.0, Qmean=4.8 ml/s, T=0.89 s
+[11:31:16]     done in 642 s, 167040 cells; label flux correction max 1.20%; dp range -92..219 Pa
+[11:31:16] [12/56] sten0011: R=2.75 mm, severity=0.41, Ls/R=2.3, Qmean=6.8 ml/s, T=0.74 s
+[11:46:44]     done in 926 s, 152640 cells; label flux correction max 0.55%; dp range -80..183 Pa
+[11:46:44] [13/56] sten0012: R=3.22 mm, severity=0.45, Ls/R=4.7, Qmean=5.1 ml/s, T=0.88 s
+[11:56:16]     done in 570 s, 165600 cells; label flux correction max 0.57%; dp range -65..135 Pa
+[11:56:16] [14/56] sten0013: R=2.80 mm, severity=0.54, Ls/R=2.8, Qmean=7.3 ml/s, T=0.95 s
+[12:26:48]     done in 1830 s, 155520 cells; label flux correction max 0.46%; dp range -8..321 Pa
+[12:26:49] [15/56] sten0014: R=3.24 mm, severity=0.71, Ls/R=2.6, Qmean=4.1 ml/s, T=0.89 s
+[12:53:02]     done in 1572 s, 154800 cells; label flux correction max 0.64%; dp range -69..725 Pa
+[12:53:02] [16/56] sten0015: R=3.44 mm, severity=0.41, Ls/R=5.0, Qmean=6.1 ml/s, T=0.99 s
+[13:03:14]     done in 610 s, 167760 cells; label flux correction max 0.39%; dp range -42..102 Pa
+[13:03:14] [17/56] sten0016: R=2.53 mm, severity=0.49, Ls/R=2.5, Qmean=7.3 ml/s, T=0.90 s
+[13:37:45]     done in 2069 s, 154080 cells; label flux correction max 0.76%; dp range -16..301 Pa
+[13:37:45] [18/56] sten0017: R=2.67 mm, severity=0.65, Ls/R=5.0, Qmean=4.9 ml/s, T=0.73 s
+[14:04:00]     done in 1573 s, 167040 cells; label flux correction max 0.34%; dp range -45..827 Pa
+[14:04:01] [19/56] sten0018: R=3.04 mm, severity=0.22, Ls/R=6.0, Qmean=4.1 ml/s, T=0.81 s
+[14:11:04]     done in 421 s, 172800 cells; label flux correction max 0.43%; dp range -71..105 Pa
+[14:11:04] [20/56] sten0019: R=3.81 mm, severity=0.47, Ls/R=5.5, Qmean=6.7 ml/s, T=0.71 s
+[14:18:29]     done in 444 s, 169920 cells; label flux correction max 0.36%; dp range -49..123 Pa
+[14:18:29] [21/56] sten0020: R=3.33 mm, severity=0.58, Ls/R=3.2, Qmean=6.3 ml/s, T=0.77 s
+[14:33:55]     done in 923 s, 157680 cells; label flux correction max 0.37%; dp range -51..233 Pa
+[14:33:55] [22/56] sten0021: R=3.17 mm, severity=0.35, Ls/R=5.1, Qmean=5.2 ml/s, T=0.75 s
+[14:43:38]     done in 581 s, 167760 cells; label flux correction max 0.54%; dp range -98..166 Pa
+[14:43:38] [23/56] sten0022: R=2.77 mm, severity=0.52, Ls/R=4.6, Qmean=5.7 ml/s, T=0.97 s
+[15:07:36]     done in 1436 s, 165600 cells; label flux correction max 0.23%; dp range -27..188 Pa
+[15:07:36] [24/56] sten0023: R=3.42 mm, severity=0.34, Ls/R=4.3, Qmean=6.0 ml/s, T=0.86 s
+[15:22:55]     done in 917 s, 163440 cells; label flux correction max 0.29%; dp range -33..81 Pa
+[15:22:55] [25/56] sten0024: R=3.14 mm, severity=0.70, Ls/R=3.8, Qmean=6.0 ml/s, T=0.73 s
+[15:59:23]     done in 1809 s, 160560 cells; label flux correction max 0.72%; dp range -39..795 Pa
+[15:59:23] [26/56] sten0025: R=3.65 mm, severity=0.59, Ls/R=3.8, Qmean=7.6 ml/s, T=0.95 s
+[16:17:08]     done in 1062 s, 160560 cells; label flux correction max 0.51%; dp range -58..272 Pa
+[16:17:08] [27/56] sten0026: R=2.65 mm, severity=0.26, Ls/R=4.8, Qmean=6.5 ml/s, T=0.86 s
+[16:31:35]     done in 866 s, 166320 cells; label flux correction max 0.27%; dp range -60..147 Pa
+[16:31:35] [28/56] sten0027: R=3.56 mm, severity=0.56, Ls/R=4.1, Qmean=7.7 ml/s, T=0.84 s
+[16:44:01]     done in 744 s, 162720 cells; label flux correction max 0.34%; dp range -42..183 Pa
+[16:44:01] [29/56] sten0028: R=2.59 mm, severity=0.30, Ls/R=2.8, Qmean=7.6 ml/s, T=0.81 s
+[17:04:17]     done in 1214 s, 155520 cells; label flux correction max 0.14%; dp range -57..171 Pa
+[17:04:17] [30/56] sten0029: R=3.47 mm, severity=0.75, Ls/R=4.7, Qmean=6.4 ml/s, T=0.79 s
+[17:30:11]     done in 1552 s, 166320 cells; label flux correction max 0.61%; dp range 57..659 Pa
+[17:30:11] [31/56] sten0030: R=2.84 mm, severity=0.59, Ls/R=5.7, Qmean=7.9 ml/s, T=0.72 s
+[17:58:02]     done in 1669 s, 171360 cells; label flux correction max 0.51%; dp range 1..556 Pa
+[17:58:02] [32/56] sten0031: R=3.19 mm, severity=0.46, Ls/R=3.1, Qmean=5.1 ml/s, T=0.80 s
+[18:10:36]     done in 752 s, 156960 cells; label flux correction max 0.95%; dp range -77..160 Pa
+[18:10:36] [33/56] sten0032: R=3.13 mm, severity=0.62, Ls/R=3.4, Qmean=4.8 ml/s, T=0.87 s
+[18:36:53]     done in 1575 s, 158400 cells; label flux correction max 0.38%; dp range -49..261 Pa
+[18:36:53] [34/56] sten0033: R=3.06 mm, severity=0.38, Ls/R=2.3, Qmean=4.0 ml/s, T=0.70 s
+[18:44:55]     done in 480 s, 152640 cells; label flux correction max 0.53%; dp range -88..142 Pa
+[18:44:55] [35/56] sten0034: R=2.87 mm, severity=0.58, Ls/R=3.9, Qmean=4.0 ml/s, T=0.75 s
+[18:59:46]     done in 889 s, 161280 cells; label flux correction max 0.65%; dp range -122..377 Pa
+[18:59:46] [36/56] sten0035: R=3.00 mm, severity=0.29, Ls/R=3.4, Qmean=4.6 ml/s, T=0.90 s
+[19:11:26]     done in 698 s, 159120 cells; label flux correction max 0.94%; dp range -89..129 Pa
+[19:11:26] [37/56] sten0036: R=3.53 mm, severity=0.74, Ls/R=2.9, Qmean=6.2 ml/s, T=0.92 s
+[19:40:00]     done in 1712 s, 155520 cells; label flux correction max 0.32%; dp range 31..589 Pa
+[19:40:00] [38/56] sten0037: R=3.93 mm, severity=0.67, Ls/R=5.6, Qmean=5.0 ml/s, T=0.88 s
+[20:19:53]     done in 1415 s, 170640 cells; label flux correction max 0.36%; dp range -16..158 Pa
+[20:19:54] [39/56] sten0038: R=3.84 mm, severity=0.49, Ls/R=3.8, Qmean=4.4 ml/s, T=0.83 s
+[20:29:51]     done in 596 s, 161280 cells; label flux correction max 0.49%; dp range -64..128 Pa
+[20:29:51] [40/56] sten0039: R=3.31 mm, severity=0.60, Ls/R=2.6, Qmean=6.8 ml/s, T=0.94 s
+[20:57:39]     done in 1666 s, 154800 cells; label flux correction max 0.33%; dp range -16..205 Pa
+[20:57:39] [41/56] sten0040: R=3.92 mm, severity=0.36, Ls/R=4.0, Qmean=7.9 ml/s, T=0.98 s
+[21:07:19]     done in 577 s, 162000 cells; label flux correction max 0.27%; dp range -43..81 Pa
+[21:07:19] [42/56] sten0041: R=3.95 mm, severity=0.22, Ls/R=4.9, Qmean=6.9 ml/s, T=0.92 s
+[21:13:24]     done in 363 s, 167040 cells; label flux correction max 0.47%; dp range -47..73 Pa
+[21:13:24] [43/56] sten0042: R=3.29 mm, severity=0.61, Ls/R=4.4, Qmean=7.1 ml/s, T=0.77 s
+[21:35:14]     done in 1308 s, 164160 cells; label flux correction max 0.25%; dp range -6..225 Pa
+[21:35:14] [44/56] sten0043: R=2.81 mm, severity=0.73, Ls/R=5.4, Qmean=6.4 ml/s, T=0.98 s
+[22:31:57]     done in 3401 s, 169920 cells; label flux correction max 0.24%; dp range 123..1011 Pa
+[22:31:57] [45/56] sten0044: R=3.50 mm, severity=0.67, Ls/R=3.5, Qmean=7.1 ml/s, T=0.94 s
+[22:55:20]     done in 1400 s, 159120 cells; label flux correction max 0.27%; dp range -13..445 Pa
+[22:55:20] [46/56] sten0045: R=3.96 mm, severity=0.73, Ls/R=3.4, Qmean=5.9 ml/s, T=0.76 s
+[23:10:09]     done in 887 s, 158400 cells; label flux correction max 0.66%; dp range -49..509 Pa
+[23:10:09] [47/56] sten0046: R=2.61 mm, severity=0.44, Ls/R=4.7, Qmean=4.2 ml/s, T=0.72 s
+[23:20:14]     done in 604 s, 165600 cells; label flux correction max 0.34%; dp range -72..158 Pa
+[23:20:15] [48/56] sten0047: R=3.12 mm, severity=0.51, Ls/R=3.6, Qmean=4.4 ml/s, T=0.93 s
+[23:29:45]     done in 569 s, 159840 cells; label flux correction max 0.93%; dp range -55..139 Pa
+[23:29:46] [49/56] ctrl0048: R=3.54 mm, severity=0.00, Ls/R=4.4, Qmean=6.9 ml/s, T=0.88 s
+[23:35:27]     done in 339 s, 164160 cells; label flux correction max 0.46%; dp range -43..87 Pa
+[23:35:27] [50/56] ctrl0049: R=3.74 mm, severity=0.00, Ls/R=2.1, Qmean=4.6 ml/s, T=0.79 s
+[23:38:31]     done in 182 s, 151200 cells; label flux correction max 0.44%; dp range -45..65 Pa
+[23:38:31] [51/56] ctrl0050: R=2.70 mm, severity=0.00, Ls/R=4.1, Qmean=5.8 ml/s, T=0.93 s
+[23:51:37]     done in 784 s, 162000 cells; label flux correction max 0.29%; dp range -85..106 Pa
+[23:51:37] [52/56] ctrl0051: R=2.58 mm, severity=0.00, Ls/R=4.2, Qmean=5.4 ml/s, T=0.87 s
+[00:07:34]     done in 955 s, 162720 cells; label flux correction max 0.18%; dp range -60..121 Pa
+[00:07:34] [53/56] ctrl0052: R=2.98 mm, severity=0.00, Ls/R=5.2, Qmean=4.3 ml/s, T=0.89 s
+[00:20:01]     done in 745 s, 168480 cells; label flux correction max 0.41%; dp range -86..108 Pa
+[00:20:01] [54/56] ctrl0053: R=2.90 mm, severity=0.00, Ls/R=3.9, Qmean=7.7 ml/s, T=0.99 s
+[00:59:12]     done in 2349 s, 162000 cells; label flux correction max 0.19%; dp range -69..112 Pa
+[00:59:13] [55/56] ctrl0054: R=2.56 mm, severity=0.00, Ls/R=4.1, Qmean=4.4 ml/s, T=0.90 s
+[01:15:34]     done in 979 s, 162720 cells; label flux correction max 0.37%; dp range -99..117 Pa
+[01:15:34] [56/56] ctrl0055: R=3.82 mm, severity=0.00, Ls/R=2.3, Qmean=7.2 ml/s, T=0.79 s
+[01:22:50]     done in 434 s, 153360 cells; label flux correction max 0.28%; dp range -26..75 Pa
+[01:22:51] all cases present; wrote splits.json and dataset.json: train=35, val=7, test=7, test_ood=7

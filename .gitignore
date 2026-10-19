@@ -7,3 +7,6 @@ data/
 runs/
 *.pt
 .DS_Store
+
+# Released artifacts are tracked despite the patterns above
+!results/model/*.pt

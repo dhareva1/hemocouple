@@ -1,0 +1,602 @@
+{
+  "dataset": {
+    "n_cases": 56,
+    "splits": {
+      "train": 35,
+      "val": 7,
+      "test": 7,
+      "test_ood": 7
+    },
+    "ood_severity": 0.68,
+    "label_flux_correction_pct": [
+      0.14,
+      1.2
+    ],
+    "cells": [
+      151200,
+      172800
+    ],
+    "generation_core_hours": 125.6,
+    "generation_wall_hours": 15.7
+  },
+  "offline": {
+    "rows": [
+      {
+        "variant": "physics_yt",
+        "setting": "wd1e-1_stokes_nop",
+        "label": "Operator, projection + Young-Tsai + Stokes prior (final)",
+        "test": {
+          "profile_pct": {
+            "mean": 0.738226,
+            "std": 0.006179,
+            "text": "0.74 \u00b1 0.01"
+          },
+          "dp_pct": {
+            "mean": 2.665475,
+            "std": 0.275454,
+            "text": "2.67 \u00b1 0.28"
+          },
+          "mass_err_max": 1.689693028795754e-15
+        },
+        "test_ood": {
+          "profile_pct": {
+            "mean": 0.860896,
+            "std": 0.019657,
+            "text": "0.86 \u00b1 0.02"
+          },
+          "dp_pct": {
+            "mean": 3.707102,
+            "std": 0.181987,
+            "text": "3.71 \u00b1 0.18"
+          },
+          "mass_err_max": 1.9734118073388984e-15
+        }
+      },
+      {
+        "variant": "physics_yt",
+        "setting": "wd1e-1",
+        "label": "Operator, projection + Young-Tsai prior",
+        "test": {
+          "profile_pct": {
+            "mean": 1.032588,
+            "std": 0.095191,
+            "text": "1.03 \u00b1 0.10"
+          },
+          "dp_pct": {
+            "mean": 2.506693,
+            "std": 0.327787,
+            "text": "2.51 \u00b1 0.33"
+          },
+          "mass_err_max": 1.1992999217819729e-15
+        },
+        "test_ood": {
+          "profile_pct": {
+            "mean": 1.060545,
+            "std": 0.054578,
+            "text": "1.06 \u00b1 0.05"
+          },
+          "dp_pct": {
+            "mean": 3.711602,
+            "std": 0.021904,
+            "text": "3.71 \u00b1 0.02"
+          },
+          "mass_err_max": 1.2507791101179017e-15
+        }
+      },
+      {
+        "variant": "physics",
+        "setting": "wd1e-1",
+        "label": "Operator, projection, no prior",
+        "test": {
+          "profile_pct": {
+            "mean": 1.009206,
+            "std": 0.055688,
+            "text": "1.01 \u00b1 0.06"
+          },
+          "dp_pct": {
+            "mean": 4.228673,
+            "std": 0.405492,
+            "text": "4.23 \u00b1 0.41"
+          },
+          "mass_err_max": 1.2160587642088067e-15
+        },
+        "test_ood": {
+          "profile_pct": {
+            "mean": 1.07881,
+            "std": 0.043659,
+            "text": "1.08 \u00b1 0.04"
+          },
+          "dp_pct": {
+            "mean": 7.337475,
+            "std": 0.25841,
+            "text": "7.34 \u00b1 0.26"
+          },
+          "mass_err_max": 1.3506376618274803e-15
+        }
+      },
+      {
+        "variant": "soft_mass",
+        "setting": "wd1e-1",
+        "label": "Operator, mass penalty, no projection",
+        "test": {
+          "profile_pct": {
+            "mean": 1.247552,
+            "std": 0.15141,
+            "text": "1.25 \u00b1 0.15"
+          },
+          "dp_pct": {
+            "mean": 4.101407,
+            "std": 0.434683,
+            "text": "4.10 \u00b1 0.43"
+          },
+          "mass_err_max": 0.032461273286501696
+        },
+        "test_ood": {
+          "profile_pct": {
+            "mean": 1.382434,
+            "std": 0.315825,
+            "text": "1.38 \u00b1 0.32"
+          },
+          "dp_pct": {
+            "mean": 7.406241,
+            "std": 0.298082,
+            "text": "7.41 \u00b1 0.30"
+          },
+          "mass_err_max": 0.047234717077337486
+        }
+      },
+      {
+        "variant": "data_only",
+        "setting": "wd1e-1",
+        "label": "Operator, data only",
+        "test": {
+          "profile_pct": {
+            "mean": 1.309542,
+            "std": 0.180169,
+            "text": "1.31 \u00b1 0.18"
+          },
+          "dp_pct": {
+            "mean": 4.011044,
+            "std": 0.568303,
+            "text": "4.01 \u00b1 0.57"
+          },
+          "mass_err_max": 0.035597927969902673
+        },
+        "test_ood": {
+          "profile_pct": {
+            "mean": 1.497748,
+            "std": 0.200919,
+            "text": "1.50 \u00b1 0.20"
+          },
+          "dp_pct": {
+            "mean": 7.345594,
+            "std": 0.347045,
+            "text": "7.35 \u00b1 0.35"
+          },
+          "mass_err_max": 0.05157552222347014
+        }
+      },
+      {
+        "variant": "physics_yt",
+        "setting": "wd1e-1_trunk",
+        "label": "Operator, projection + Young-Tsai, learned trunk",
+        "test": {
+          "profile_pct": {
+            "mean": 1.282632,
+            "std": 0.154989,
+            "text": "1.28 \u00b1 0.15"
+          },
+          "dp_pct": {
+            "mean": 2.685711,
+            "std": 0.402163,
+            "text": "2.69 \u00b1 0.40"
+          },
+          "mass_err_max": 1.1705492787149247e-15
+        },
+        "test_ood": {
+          "profile_pct": {
+            "mean": 1.489416,
+            "std": 0.159838,
+            "text": "1.49 \u00b1 0.16"
+          },
+          "dp_pct": {
+            "mean": 3.73148,
+            "std": 0.049452,
+            "text": "3.73 \u00b1 0.05"
+          },
+          "mass_err_max": 1.681134980647512e-15
+        }
+      },
+      {
+        "variant": "physics_yt",
+        "setting": "wd1e-1_stokes",
+        "label": "Ablation: final model with the total-pressure loss",
+        "test": {
+          "profile_pct": {
+            "mean": 0.772827,
+            "std": 0.01421,
+            "text": "0.77 \u00b1 0.01"
+          },
+          "dp_pct": {
+            "mean": 2.661187,
+            "std": 0.27542,
+            "text": "2.66 \u00b1 0.28"
+          },
+          "mass_err_max": 1.770767303099012e-15
+        },
+        "test_ood": {
+          "profile_pct": {
+            "mean": 0.966626,
+            "std": 0.094183,
+            "text": "0.97 \u00b1 0.09"
+          },
+          "dp_pct": {
+            "mean": 3.708806,
+            "std": 0.181765,
+            "text": "3.71 \u00b1 0.18"
+          },
+          "mass_err_max": 2.0956977419886376e-15
+        }
+      },
+      {
+        "variant": "data_only",
+        "setting": "wd1e-1_stokes",
+        "label": "Ablation: data only + Stokes prior",
+        "test": {
+          "profile_pct": {
+            "mean": 0.732549,
+            "std": 0.006178,
+            "text": "0.73 \u00b1 0.01"
+          },
+          "dp_pct": {
+            "mean": 4.154535,
+            "std": 0.485965,
+            "text": "4.15 \u00b1 0.49"
+          },
+          "mass_err_max": 3.1674230533873555e-05
+        },
+        "test_ood": {
+          "profile_pct": {
+            "mean": 0.858779,
+            "std": 0.021104,
+            "text": "0.86 \u00b1 0.02"
+          },
+          "dp_pct": {
+            "mean": 7.392785,
+            "std": 0.379169,
+            "text": "7.39 \u00b1 0.38"
+          },
+          "mass_err_max": 3.9683044643881154e-05
+        }
+      },
+      {
+        "variant": "physics",
+        "setting": "wd1e-1_stokes",
+        "label": "Ablation: projection + Stokes prior, no Young-Tsai prior",
+        "test": {
+          "profile_pct": {
+            "mean": 0.850629,
+            "std": 0.039262,
+            "text": "0.85 \u00b1 0.04"
+          },
+          "dp_pct": {
+            "mean": 4.142065,
+            "std": 0.504269,
+            "text": "4.14 \u00b1 0.50"
+          },
+          "mass_err_max": 1.6861130237876085e-15
+        },
+        "test_ood": {
+          "profile_pct": {
+            "mean": 1.761423,
+            "std": 0.444819,
+            "text": "1.76 \u00b1 0.44"
+          },
+          "dp_pct": {
+            "mean": 7.404884,
+            "std": 0.403512,
+            "text": "7.40 \u00b1 0.40"
+          },
+          "mass_err_max": 2.057693034473725e-15
+        }
+      }
+    ],
+    "baselines": {
+      "test": {
+        "poiseuille_profile_pct": 10.23,
+        "womersley_profile_pct": 1.21,
+        "1d_only_dp_pct": 24.46,
+        "young_tsai_dp_pct": 24.08,
+        "young_tsai_cal_dp_pct": 8.69
+      },
+      "test_ood": {
+        "poiseuille_profile_pct": 12.19,
+        "womersley_profile_pct": 1.41,
+        "1d_only_dp_pct": 32.75,
+        "young_tsai_dp_pct": 23.43,
+        "young_tsai_cal_dp_pct": 4.29
+      }
+    },
+    "regularization_score": {
+      "wd1e-1": 0.964,
+      "wd3e-1": 0.98,
+      "wd1e-2": 0.99,
+      "base": 1.0,
+      "do0.1": 1.155,
+      "h64": 1.188,
+      "wd1": 1.222
+    },
+    "regularization_chosen": "wd1e-1",
+    "regularization_configured": "wd1e-1",
+    "final_pressure_loss_score": {
+      "wd1e-1_stokes": 0.91,
+      "wd1e-1_stokes_nop": 0.888
+    },
+    "prior_scale": {
+      "mean": 0.86,
+      "std": 0.02
+    },
+    "dp_train_test_ood_pct": {
+      "physics": {
+        "train": "1.45 \u00b1 0.19",
+        "test": "4.23 \u00b1 0.41",
+        "test_ood": "7.34 \u00b1 0.26"
+      },
+      "physics_yt": {
+        "train": "1.83 \u00b1 0.27",
+        "test": "2.51 \u00b1 0.33",
+        "test_ood": "3.71 \u00b1 0.02"
+      }
+    },
+    "final_model": {
+      "run": "physics_yt__wd1e-1_stokes_nop__s2",
+      "n_modes": 16,
+      "epochs": 81,
+      "training_time_s": 36.4,
+      "pod_floor_val": 0.0009409362312579092
+    },
+    "young_tsai_cal_scales": [
+      0.08,
+      0.721,
+      7.619
+    ]
+  },
+  "coupled": {
+    "n_cases": 14,
+    "table": {
+      "baseline_A": {
+        "label": "Mode A, Poiseuille inlet",
+        "p_gamma_pct": 1.5,
+        "q_pct": 0.95,
+        "dp_pct": 3.38,
+        "reflection_abs_diff": 0.0073,
+        "mass_err_max": 1.6713422859473664e-15,
+        "cost_vs_reference": 0.7363932318956579,
+        "wall_min": 816.36
+      },
+      "physics_yt_stokes_A": {
+        "label": "Mode A, operator inlet",
+        "p_gamma_pct": 1.46,
+        "q_pct": 0.94,
+        "dp_pct": 1.66,
+        "reflection_abs_diff": 0.0055,
+        "mass_err_max": 1.7226569726991894e-15,
+        "cost_vs_reference": 0.4447701276910814,
+        "wall_min": 493.07
+      },
+      "physics_yt_stokes_B": {
+        "label": "Mode B, operator",
+        "p_gamma_pct": 1.47,
+        "q_pct": 1.15,
+        "dp_pct": 3.18,
+        "reflection_abs_diff": 0.0042,
+        "mass_err_max": 1.6457989909239238e-15,
+        "cost_vs_reference": 4.00882370586439e-05,
+        "wall_min": 0.04
+      },
+      "young_tsai_cal_B": {
+        "label": "Mode B, calibrated Young-Tsai",
+        "p_gamma_pct": 1.52,
+        "q_pct": 1.29,
+        "dp_pct": 6.45,
+        "reflection_abs_diff": 0.008,
+        "mass_err_max": 1.671351962258441e-15,
+        "cost_vs_reference": 4.2746062087829134e-05,
+        "wall_min": 0.05
+      },
+      "young_tsai_B": {
+        "label": "Mode B, Young-Tsai",
+        "p_gamma_pct": 4.15,
+        "q_pct": 2.05,
+        "dp_pct": 31.53,
+        "reflection_abs_diff": 0.0084,
+        "mass_err_max": 1.2535470187317903e-15,
+        "cost_vs_reference": 4.225855144553948e-05,
+        "wall_min": 0.05
+      },
+      "1d_only_B": {
+        "label": "Mode B, 1D only",
+        "p_gamma_pct": 4.52,
+        "q_pct": 3.67,
+        "dp_pct": 35.42,
+        "reflection_abs_diff": 0.0259,
+        "mass_err_max": 1.4074146989158948e-15,
+        "cost_vs_reference": 4.375774100188385e-05,
+        "wall_min": 0.05
+      }
+    },
+    "iterations_mean_range": [
+      2.65,
+      2.98
+    ],
+    "all_converged": true,
+    "n_stenosed": 13,
+    "A_vs_baseline": {
+      "p_gamma_rel_rmse": {
+        "better": 14,
+        "of": 14,
+        "median_change_pct": -2.7
+      },
+      "dp_rel_rmse": {
+        "better": 13,
+        "of": 13,
+        "median_change_pct": -50.7
+      },
+      "reflection_abs_diff": {
+        "better": 14,
+        "of": 14,
+        "median_change_pct": -23.5
+      },
+      "q_rel_rmse": {
+        "better": 6,
+        "of": 14,
+        "median_change_pct": 0.4
+      }
+    },
+    "B_vs_1d": {
+      "p_gamma_rel_rmse": {
+        "better": 13,
+        "of": 14,
+        "median_change_pct": -59.6
+      },
+      "dp_rel_rmse": {
+        "better": 13,
+        "of": 13,
+        "median_change_pct": -92.0
+      },
+      "q_rel_rmse": {
+        "better": 14,
+        "of": 14,
+        "median_change_pct": -69.5
+      }
+    },
+    "B_vs_young_tsai_cal": {
+      "p_gamma_rel_rmse": {
+        "better": 13,
+        "of": 14,
+        "median_change_pct": -2.1
+      },
+      "dp_rel_rmse": {
+        "better": 12,
+        "of": 13,
+        "median_change_pct": -48.9
+      },
+      "q_rel_rmse": {
+        "better": 10,
+        "of": 14,
+        "median_change_pct": -12.1
+      },
+      "reflection_abs_diff": {
+        "better": 13,
+        "of": 14,
+        "median_change_pct": -41.2
+      }
+    },
+    "dp_pct_by_split": {
+      "test": {
+        "baseline_A": 4.45,
+        "physics_yt_stokes_A": 1.99,
+        "physics_yt_stokes_B": 3.79,
+        "young_tsai_cal_B": 8.4,
+        "young_tsai_B": 29.29,
+        "1d_only_B": 27.21
+      },
+      "test_ood": {
+        "baseline_A": 2.46,
+        "physics_yt_stokes_A": 1.38,
+        "physics_yt_stokes_B": 2.65,
+        "young_tsai_cal_B": 4.78,
+        "young_tsai_B": 33.45,
+        "1d_only_B": 42.46
+      }
+    },
+    "B_seeds": {
+      "p_gamma_rel_rmse": {
+        "mean_pct": 1.47,
+        "std_pct": 0.02,
+        "better_than_young_tsai_cal": [
+          14,
+          10,
+          13,
+          13,
+          14
+        ],
+        "of": 14
+      },
+      "dp_rel_rmse": {
+        "mean_pct": 3.12,
+        "std_pct": 0.17,
+        "better_than_young_tsai_cal": [
+          13,
+          13,
+          12,
+          13,
+          13
+        ],
+        "of": 13
+      },
+      "q_rel_rmse": {
+        "mean_pct": 1.15,
+        "std_pct": 0.04,
+        "better_than_young_tsai_cal": [
+          10,
+          11,
+          10,
+          9,
+          10
+        ],
+        "of": 14
+      },
+      "reflection_abs_diff": {
+        "mean_pct": 0.4,
+        "std_pct": 0.02,
+        "better_than_young_tsai_cal": [
+          13,
+          12,
+          13,
+          13,
+          13
+        ],
+        "of": 14
+      }
+    },
+    "B_vs_A_q_median_change_pct": 13.9,
+    "severe_cases": {
+      "n": 10,
+      "1d_only_B_pct": 5.7,
+      "young_tsai_B_pct": 5.2,
+      "young_tsai_cal_B_pct": 1.49,
+      "operator_B_pct": 1.44,
+      "dp_pct": {
+        "baseline_A": 2.93,
+        "physics_yt_stokes_A": 1.54,
+        "physics_yt_stokes_B": 2.76,
+        "young_tsai_cal_B": 5.05,
+        "young_tsai_B": 35.72,
+        "1d_only_B": 40.57
+      }
+    },
+    "break_even": {
+      "C_off_core_h": 125.6,
+      "C_on_baseline_core_h": 13.6,
+      "C_on_operator_core_h": 0.0007,
+      "N_star": 9.2,
+      "speedup_vs_reference": 24945
+    }
+  },
+  "regen": {
+    "n_cases": 56,
+    "worst": {
+      "q": 0.0,
+      "p1d": 0.004143560451406025,
+      "p_interface": 0.004112191292276806,
+      "p_lin": 0.0,
+      "dp": 0.028196376285461303,
+      "profiles_rel_l2": 1.3619068401815073e-05
+    },
+    "median_dp": 0.000198497802990205,
+    "median_profiles": 1.823796751260117e-07,
+    "flux_correction_identical": 56,
+    "max_metric_change_pp": 0.023
+  }
+}

@@ -1,6 +1,6 @@
 # hemocouple
 
-Code, reference dataset and results for the article *Physics-informed neural operators with exact flux projection for 1D–3D hemodynamic interface coupling* (D. Hareva, submitted to Computer Methods in Applied Mechanics and Engineering). The section numbers in the tables below refer to the original research proposal, which is not part of this repository.
+Code, reference dataset and results for the article *Physics-informed operator learning with exact flux projection for 1D–3D hemodynamic interface coupling* (D. Hareva, submitted to Computer Methods in Applied Mechanics and Engineering). The section numbers in the tables below refer to the original research proposal, which is not part of this repository.
 
 A POD-DeepONet learns the interface response of a local 3D domain from a causal window of 1D flow/pressure and local geometry. An exact flux-projection layer enforces mass conservation. The operator is then called inside a partitioned 1D–3D coupling loop.
 

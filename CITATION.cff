@@ -1,6 +1,6 @@
 cff-version: 1.2.0
 message: "If you use this code or dataset, please cite it as below."
-title: "hemocouple: physics-informed neural operators with exact flux projection for 1D-3D hemodynamic interface coupling"
+title: "hemocouple: physics-informed operator learning with exact flux projection for 1D-3D hemodynamic interface coupling"
 authors:
   - family-names: Hareva
     given-names: David

@@ -1,0 +1,29 @@
+{
+  "basis": {
+    "max_abs_J2_at_roots": 6.206482888842067e-16,
+    "max_rel_flux": 5.958678905246294e-09,
+    "max_offdiag_gram": 3.315412042452384e-08,
+    "b_hat_vs_galerkin_max_rel": 5.640956265912053e-06,
+    "slowest_decay_rate_R2_over_nu": 26.374616427163392
+  },
+  "prior_vs_womersley": [
+    {
+      "window_cycles": 0.99,
+      "rel_l2_max": 0.004643046411224719,
+      "rel_l2_median": 0.0006275606881284505,
+      "startup_bound_max": 0.023008023578541262
+    },
+    {
+      "window_cycles": 2.0,
+      "rel_l2_max": 0.0008465919997301704,
+      "rel_l2_median": 0.0004270258363883981,
+      "startup_bound_max": 0.0004905296691495942
+    },
+    {
+      "window_cycles": 4.0,
+      "rel_l2_max": 0.0008465919997300201,
+      "rel_l2_median": 0.0004250575863595228,
+      "startup_bound_max": 2.4061935631601035e-07
+    }
+  ]
+}
